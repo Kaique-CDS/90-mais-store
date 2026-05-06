@@ -17,6 +17,6 @@ Este projeto foi criado para resolver a fricção de vendas em marketplaces trad
 ## 🎯 Funcionalidades Principais
 - [x] **Integração em Nuvem:** Conexão em tempo real com banco de dados PostgreSQL via Supabase.
 - [x] **Design Moderno:** Interface "Mobile First" focada no público jovem e fãs de futebol.
-- [ ] **Carrinho Inteligente:** Seleção de múltiplos itens com soma automática (Em progresso).
-- [ ] **Integração WhatsApp:** Geração de deep-links para checkout direto (Em progresso).
-- [ ] **Painel Administrativo:** Gestão de estoque e disponibilidade (Em progresso).
+- [x] **Carrinho Inteligente:** Seleção de múltiplos itens com soma automática (Em progresso).
+- [x] **Integração WhatsApp:** Geração de deep-links para checkout direto (Em progresso).
+- [x] **Painel Administrativo:** Gestão de estoque e disponibilidade (Em progresso).
