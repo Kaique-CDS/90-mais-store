@@ -1,6 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Validação de segurança
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("ERRO: Variáveis de ambiente do Supabase não encontradas!")
+}
+
+export const supabase = createClient(
+  supabaseUrl || '', 
+  supabaseAnonKey || ''
+)

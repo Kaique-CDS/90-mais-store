@@ -1,65 +1,82 @@
-import Image from "next/image";
+import { supabase } from "@/lib/supabaseClient";
 
-export default function Home() {
+export default async function Home() {
+  const { data: camisetas } = await supabase.from("camisetas").select("*");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-black text-white selection:bg-red-600">
+      {/* HEADER PROFISSIONAL */}
+      <nav className="border-b border-zinc-900 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic">
+            90+ <span className="text-red-600">Store</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <div className="flex gap-4">
+            <div className="h-10 w-10 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800">
+              🛒
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* TÍTULO DA SEÇÃO */}
+        <div className="flex items-center gap-4 mb-12">
+          <div className="h-8 w-2 bg-red-600"></div>
+          <h2 className="text-4xl font-bold uppercase tracking-tight">
+            O Catálogo
+          </h2>
         </div>
-      </main>
-    </div>
+
+        {/* GRID DE PRODUTOS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {camisetas?.map((camisa) => (
+            <div
+              key={camisa.id}
+              className="group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-sm overflow-hidden hover:border-red-600 transition-all duration-300"
+            >
+              {/* ÁREA DA IMAGEM */}
+              <div className="aspect-[3/4] bg-zinc-900 relative overflow-hidden">
+                {camisa.imagem_url ? (
+                  <img
+                    src={camisa.imagem_url}
+                    alt={camisa.nome}
+                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-700 font-black italic text-4xl">
+                    90+
+                  </div>
+                )}
+                {/* TAG DE CATEGORIA */}
+                <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-bold px-2 py-1 uppercase tracking-widest">
+                  {camisa.categoria || "Classic"}
+                </span>
+              </div>
+
+              {/* INFO DO PRODUTO */}
+              <div className="p-5">
+                <h3 className="text-xl font-bold uppercase tracking-tight mb-1 group-hover:text-red-500 transition-colors">
+                  {camisa.nome}
+                </h3>
+                <p className="text-zinc-500 text-sm mb-4 line-clamp-1">
+                  {camisa.descricao ||
+                    "Camisa de alta qualidade padrão jogador."}
+                </p>
+
+                <div className="flex justify-between items-center mt-auto">
+                  <span className="text-2xl font-black">
+                    R$ {Number(camisa.preco).toFixed(2)}
+                  </span>
+                  <button className="bg-white text-black font-bold px-4 py-2 text-xs uppercase hover:bg-red-600 hover:text-white transition-colors">
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }
