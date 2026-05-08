@@ -42,9 +42,13 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
   const finalizarWhatsApp = () => {
     const linhasItens = cart.map((i: CartItem) => {
-      const pers = i.personalizacao
-        ? ` | Personalização: ${i.personalizacao.nome} #${i.personalizacao.numero}`
-        : "";
+      let pers = "";
+      if (i.personalizacao) {
+        const { nome, numero } = i.personalizacao;
+        if (nome && numero) pers = ` | Personalização: ${nome} #${numero}`;
+        else if (nome) pers = ` | Personalização: ${nome}`;
+        else if (numero) pers = ` | Personalização: #${numero}`;
+      }
       return `- ${i.nome} (Tam: ${i.size}) x${i.quantity} — R$ ${(i.effectivePrice * i.quantity).toFixed(2)}${pers}`;
     });
 
@@ -160,7 +164,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   </p>
                   {item.personalizacao && (
                     <p className="text-zinc-400 text-[10px] mt-0.5">
-                      ✏️ {item.personalizacao.nome} #{item.personalizacao.numero}
+                      ✏️ {[item.personalizacao.nome, item.personalizacao.numero ? `#${item.personalizacao.numero}` : ""].filter(Boolean).join(" ")}
                       <span className="text-yellow-500 ml-1">(+R$70)</span>
                     </p>
                   )}

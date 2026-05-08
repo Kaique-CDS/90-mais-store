@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   ChevronLeft,
@@ -52,24 +52,78 @@ export default function ProductModal({
   const [wantsPersonalizacao, setWantsPersonalizacao] = useState(false);
   const [persNome, setPersNome] = useState("");
   const [persNumero, setPersNumero] = useState("");
+  const [imagens, setImagens] = useState<string[]>([]);
+  const [thumbOffset, setThumbOffset] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
-  // Máximo 10 imagens na galeria
-  const imagens: string[] = Array.from(
-    new Set([camisa?.imagem_url, ...(camisa?.galeria ?? [])].filter(Boolean)),
-  ).slice(0, 10);
+  const THUMBS_VISIBLE = 5;
 
-  // Reset ao abrir
+  // Mostra imagens do DB imediatamente; escaneia mais em background
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && camisa) {
+      // Reset imediato
       setCurrentIndex(0);
+      setThumbOffset(0);
       setSize("");
       setAddedFeedback(false);
       setWantsPersonalizacao(false);
       setPersNome("");
       setPersNumero("");
       setShowSizeChart(false);
+
+      // Carrega o que já está no banco instantaneamente
+      const initial = Array.from(
+        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
+      ).slice(0, 10);
+      setImagens(initial);
+
+      // Escaneia sequencialmente (para no primeiro 404) para encontrar extras
+      const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
+      if (!urlMatch) return;
+      const baseUrl = urlMatch[1];
+
+      let cancelled = false;
+      const scan = async () => {
+        const found: string[] = [];
+        for (let i = 1; i <= 10; i++) {
+          if (cancelled) return;
+          const url = `${baseUrl}${i}.jpg`;
+          try {
+            const res = await fetch(url, { method: "HEAD" });
+            if (res.ok) found.push(url);
+            else break; // para no primeiro 404
+          } catch {
+            break;
+          }
+        }
+        if (!cancelled && found.length > initial.length) {
+          setImagens(found);
+        }
+      };
+      scan();
+      return () => { cancelled = true; };
     }
   }, [isOpen, camisa]);
+
+  // Thumb window acompanha currentIndex automaticamente
+  useEffect(() => {
+    setThumbOffset((prev) => {
+      if (currentIndex < prev) return currentIndex;
+      if (currentIndex >= prev + THUMBS_VISIBLE) return currentIndex - THUMBS_VISIBLE + 1;
+      return prev;
+    });
+  }, [currentIndex]);
+
+  // Handlers de touch para swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) diff > 0 ? nextImage() : prevImage();
+    touchStartX.current = null;
+  };
 
   // Bloquear scroll do body
   useEffect(() => {
@@ -87,7 +141,7 @@ export default function ProductModal({
 
   const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
   const persValid =
-    !wantsPersonalizacao || (persNome.trim() !== "" && persNumero.trim() !== "");
+    !wantsPersonalizacao || (persNome.trim() !== "" || persNumero.trim() !== "");
   const canAdd = !!size && persValid;
 
   const effectivePrice =
@@ -120,26 +174,29 @@ export default function ProductModal({
       />
 
       <div className="relative bg-zinc-950 border border-zinc-900 w-full max-w-5xl max-h-[98vh] md:max-h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
-        {/* ── ÁREA DA IMAGEM ── */}
         <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-4 md:p-8 flex flex-col items-center justify-center group">
           {imagens.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
               aria-label="Imagem anterior"
-              className="absolute left-4 z-20 p-3 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600"
+              className="absolute left-2 md:left-4 z-20 p-2 md:p-3 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600"
             >
-              <ChevronLeft size={28} />
+              <ChevronLeft size={24} />
             </button>
           )}
 
-          <div className="w-full h-[260px] md:h-[460px] flex items-center justify-center select-none">
+          <div
+            className="w-full h-[260px] md:h-[460px] flex items-center justify-center select-none cursor-pointer"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img
-              key={currentIndex}
-              src={imagens[currentIndex]}
+              src={imagens[currentIndex] ?? camisa.imagem_url}
               alt={`${camisa.nome} — foto ${currentIndex + 1}`}
               loading="eager"
               decoding="async"
-              className="max-w-full max-h-full object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] transition-opacity duration-200 opacity-100"
+              fetchPriority="high"
+              className="max-w-full max-h-full object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"
             />
           </div>
 
@@ -147,29 +204,64 @@ export default function ProductModal({
             <button
               onClick={(e) => { e.stopPropagation(); nextImage(); }}
               aria-label="Próxima imagem"
-              className="absolute right-4 z-20 p-3 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600"
+              className="absolute right-2 md:right-4 z-20 p-2 md:p-3 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600"
             >
-              <ChevronRight size={28} />
+              <ChevronRight size={24} />
             </button>
           )}
 
-          {/* Miniaturas */}
-          <div className="flex gap-2 mt-4 overflow-x-auto max-w-full pb-2 scrollbar-none px-4">
-            {imagens.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`Miniatura ${i + 1}`}
-                loading="lazy"
-                onClick={() => setCurrentIndex(i)}
-                className={`w-12 h-12 md:w-14 md:h-14 rounded-xl object-cover cursor-pointer transition-all border-2 flex-shrink-0 ${
-                  currentIndex === i
-                    ? "border-red-600 scale-110"
-                    : "border-transparent opacity-30 hover:opacity-100"
-                }`}
-              />
-            ))}
-          </div>
+          {/* Miniaturas — sem scrollbar, com navegação por setas */}
+          {imagens.length > 1 && (
+            <div className="flex items-center gap-1.5 mt-4">
+              {/* Seta esquerda das thumbs */}
+              {imagens.length > THUMBS_VISIBLE && (
+                <button
+                  onClick={() => setThumbOffset((p) => Math.max(0, p - 1))}
+                  disabled={thumbOffset === 0}
+                  className="p-1 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors flex-shrink-0"
+                  aria-label="Thumbs anteriores"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+              )}
+
+              {/* Thumbs visíveis */}
+              <div className="flex gap-2">
+                {imagens
+                  .slice(thumbOffset, thumbOffset + THUMBS_VISIBLE)
+                  .map((img, i) => (
+                    <img
+                      key={thumbOffset + i}
+                      src={img}
+                      alt={`Miniatura ${thumbOffset + i + 1}`}
+                      loading="lazy"
+                      onClick={() => setCurrentIndex(thumbOffset + i)}
+                      className={`w-12 h-12 md:w-14 md:h-14 rounded-xl object-cover cursor-pointer transition-all border-2 flex-shrink-0 ${
+                        currentIndex === thumbOffset + i
+                          ? "border-red-600 scale-110"
+                          : "border-transparent opacity-30 hover:opacity-100"
+                      }`}
+                    />
+                  ))}
+              </div>
+
+              {/* Seta direita das thumbs */}
+              {imagens.length > THUMBS_VISIBLE && (
+                <button
+                  onClick={() =>
+                    setThumbOffset((p) =>
+                      Math.min(p + 1, imagens.length - THUMBS_VISIBLE),
+                    )
+                  }
+                  disabled={thumbOffset >= imagens.length - THUMBS_VISIBLE}
+                  className="p-1 text-zinc-500 hover:text-white disabled:opacity-20 transition-colors flex-shrink-0"
+                  aria-label="Próximas thumbs"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── ÁREA DE COMPRA ── */}
@@ -265,7 +357,7 @@ export default function ProductModal({
                   <span className="text-yellow-400">+R$70</span>
                 </p>
                 <p className="text-zinc-500 text-[10px]">
-                  Nome e número no dorso da camisa
+                  Nome e/ou número no dorso da camisa
                 </p>
               </div>
             </label>
@@ -282,7 +374,7 @@ export default function ProductModal({
                     placeholder="NOME"
                     value={persNome}
                     onChange={(e) => setPersNome(e.target.value.toUpperCase())}
-                    maxLength={20}
+                    maxLength={14}
                     className="w-full bg-zinc-800 border border-zinc-700 text-white text-xs font-black uppercase tracking-widest py-3 pl-9 pr-3 rounded-xl outline-none focus:border-red-600 transition-all"
                   />
                 </div>
@@ -292,12 +384,14 @@ export default function ProductModal({
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
                   />
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="N°"
                     value={persNumero}
-                    onChange={(e) => setPersNumero(e.target.value)}
-                    min={1}
-                    max={99}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      if (val.length <= 2) setPersNumero(val);
+                    }}
                     className="w-full bg-zinc-800 border border-zinc-700 text-white text-xs font-black py-3 pl-9 pr-3 rounded-xl outline-none focus:border-red-600 transition-all"
                   />
                 </div>
@@ -321,7 +415,7 @@ export default function ProductModal({
                   : !size
                   ? "SELECIONE O TAMANHO"
                   : wantsPersonalizacao && !persValid
-                  ? "PREENCHA NOME E NÚMERO"
+                  ? "PREENCHA NOME OU NÚMERO"
                   : `ADICIONAR — R$ ${effectivePrice.toFixed(2)}`}
               </span>
             </button>
