@@ -1,5 +1,12 @@
-import { CartProvider } from "@/components/cartcontext"; // Verifique se o caminho está certo!
+import type { Metadata } from "next";
+import { CartProvider } from "@/components/cartcontext";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "90+ Store | Camisetas Premium 1:1",
+  description:
+    "Acervo exclusivo de camisetas de futebol premium qualidade 1:1. Nacionais, internacionais, retrô e seleções.",
+};
 
 export default function RootLayout({
   children,
@@ -9,7 +16,6 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body>
-        {/* O CartProvider PRECISA envolver o {children} */}
         <CartProvider>{children}</CartProvider>
       </body>
     </html>

@@ -1,47 +1,126 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 
-const CartContext = createContext<any>(null);
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface Product {
+  id: string;
+  nome: string;
+  preco: number;
+  imagem_url: string;
+  categoria?: string;
+  descricao?: string;
+  galeria?: string[];
+}
+
+export interface Personalizacao {
+  nome: string;
+  numero: string;
+}
+
+export interface CartItem extends Product {
+  cartId: string;
+  size: string;
+  quantity: number;
+  priceModifier: number;       // +20 para G1/G2
+  personalizacao?: Personalizacao; // +70 se informado
+  effectivePrice: number;       // preco + priceModifier + (personalizacao ? 70 : 0)
+}
+
+interface CartContextValue {
+  cart: CartItem[];
+  addToCart: (
+    product: Product,
+    size: string,
+    priceModifier?: number,
+    personalizacao?: Personalizacao,
+  ) => void;
+  removeFromCart: (cartId: string) => void;
+  incrementItem: (cartId: string) => void;
+  decrementItem: (cartId: string) => void;
+  clearCart: () => void;
+  subtotal: number;
+  desconto: number;
+  total: number;
+  totalItens: number;
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+
+const CartContext = createContext<CartContextValue | null>(null);
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
 
-  // 1. ADICIONAR AO CARRINHO (Com tamanho!)
-  const addToCart = (product: any, size: string) => {
+  const addToCart = (
+    product: Product,
+    size: string,
+    priceModifier = 0,
+    personalizacao?: Personalizacao,
+  ) => {
+    const effectivePrice =
+      product.preco + priceModifier + (personalizacao ? 70 : 0);
+
+    const persKey = personalizacao
+      ? `-${personalizacao.nome}-${personalizacao.numero}`
+      : "";
+    const cartId = `${product.id}-${size}-${priceModifier}${persKey}`;
+
     setCart((prev) => {
-      // Cria um ID único combinando ID do produto + Tamanho
-      const cartId = `${product.id}-${size}`;
-      const existing = prev.find((item) => item.cartId === cartId);
-
+      const existing = prev.find((i) => i.cartId === cartId);
       if (existing) {
-        return prev.map((item) =>
-          item.cartId === cartId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
+        return prev.map((i) =>
+          i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
-      return [...prev, { ...product, cartId, size, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          ...product,
+          cartId,
+          size,
+          quantity: 1,
+          priceModifier,
+          personalizacao,
+          effectivePrice,
+        },
+      ];
     });
   };
 
-  const removeFromCart = (cartId: string) => {
-    setCart((prev) => prev.filter((item) => item.cartId !== cartId));
-  };
+  const removeFromCart = (cartId: string) =>
+    setCart((prev) => prev.filter((i) => i.cartId !== cartId));
 
-  // 2. CÁLCULO DE DESCONTO PROGRESSIVO
+  const incrementItem = (cartId: string) =>
+    setCart((prev) =>
+      prev.map((i) =>
+        i.cartId === cartId ? { ...i, quantity: i.quantity + 1 } : i,
+      ),
+    );
+
+  const decrementItem = (cartId: string) =>
+    setCart((prev) =>
+      prev
+        .map((i) =>
+          i.cartId === cartId ? { ...i, quantity: i.quantity - 1 } : i,
+        )
+        .filter((i) => i.quantity > 0),
+    );
+
+  const clearCart = () => setCart([]);
+
   const subtotal = cart.reduce(
-    (acc, item) => acc + item.preco * item.quantity,
+    (acc, item) => acc + item.effectivePrice * item.quantity,
     0,
   );
+
   const totalItens = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  let desconto = 0;
-  if (totalItens === 2) {
-    desconto = 10;
-  } else if (totalItens >= 3) {
-    desconto = 20;
-  }
+  // 5% de desconto a partir de 2 itens
+  const desconto = totalItens >= 2 ? subtotal * 0.05 : 0;
 
   const total = subtotal - desconto;
 
@@ -51,6 +130,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         cart,
         addToCart,
         removeFromCart,
+        incrementItem,
+        decrementItem,
+        clearCart,
         subtotal,
         desconto,
         total,
@@ -62,4 +144,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useCart = () => useContext(CartContext);
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
+export function useCart(): CartContextValue {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error("useCart deve ser usado dentro de <CartProvider>");
+  return ctx;
+}
