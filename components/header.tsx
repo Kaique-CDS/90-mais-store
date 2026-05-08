@@ -5,7 +5,6 @@ import { useCart } from "@/components/cartcontext";
 import { CATEGORIES } from "@/lib/categories";
 
 interface HeaderProps {
-  totalTimes: number;
   onSearch: (term: string) => void;
   onOpenCart: () => void;
   activeCategory: string;
@@ -23,17 +22,14 @@ export default function HeaderAcervo({
   return (
     <header className="w-full pt-10 pb-6 px-6 bg-black border-b border-zinc-900">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
-        {/* LOGO E BUSCA */}
+        {/* Logo + Busca */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
             90+ <span className="text-red-600">STORE</span>
           </h1>
 
           <div className="relative w-full md:max-w-md">
-            <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600"
-              size={18}
-            />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
             <input
               type="text"
               placeholder="BUSCAR TIME..."
@@ -43,7 +39,7 @@ export default function HeaderAcervo({
           </div>
         </div>
 
-        {/* TAGS DE CATEGORIA */}
+        {/* Filtros de categoria */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {CATEGORIES.map((tag) => (
             <button
@@ -61,7 +57,7 @@ export default function HeaderAcervo({
         </div>
       </div>
 
-      {/* BOTÃO FLUTUANTE DO CARRINHO */}
+      {/* Botão flutuante do carrinho */}
       <button
         onClick={onOpenCart}
         aria-label="Abrir carrinho"

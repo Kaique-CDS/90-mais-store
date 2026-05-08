@@ -23,6 +23,8 @@ const SIZE_MODIFIER: Record<Size, number> = {
   P: 0, M: 0, G: 0, GG: 0, G1: 20, G2: 20,
 };
 
+const THUMBS_VISIBLE = 5;
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ProductModalProps {
@@ -56,7 +58,6 @@ export default function ProductModal({
   const [thumbOffset, setThumbOffset] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
-  const THUMBS_VISIBLE = 5;
 
   // Mostra imagens do DB imediatamente; escaneia mais em background
   useEffect(() => {
@@ -140,26 +141,17 @@ export default function ProductModal({
   if (!isOpen || !camisa) return null;
 
   const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
-  const persValid =
-    !wantsPersonalizacao || (persNome.trim() !== "" || persNumero.trim() !== "");
+  const persValid = !wantsPersonalizacao || (persNome.trim() !== "" || persNumero.trim() !== "");
   const canAdd = !!size && persValid;
-
-  const effectivePrice =
-    camisa.preco + priceModifier + (wantsPersonalizacao ? 70 : 0);
-
+  const effectivePrice = camisa.preco + priceModifier + (wantsPersonalizacao ? 70 : 0);
   const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome);
 
-  const prevImage = () =>
-    setCurrentIndex((prev) => (prev - 1 + imagens.length) % imagens.length);
-  const nextImage = () =>
-    setCurrentIndex((prev) => (prev + 1) % imagens.length);
+  const prevImage = () => setCurrentIndex((p) => (p - 1 + imagens.length) % imagens.length);
+  const nextImage = () => setCurrentIndex((p) => (p + 1) % imagens.length);
 
   const handleAdd = () => {
     if (!size || !persValid) return;
-    const pers =
-      wantsPersonalizacao
-        ? { nome: persNome.trim(), numero: persNumero.trim() }
-        : undefined;
+    const pers = wantsPersonalizacao ? { nome: persNome.trim(), numero: persNumero.trim() } : undefined;
     onAddToCart(camisa, size, priceModifier, pers);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);

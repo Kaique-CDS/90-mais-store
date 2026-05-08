@@ -74,7 +74,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white">
       <HeaderAcervo
-        totalTimes={camisas.length}
         onSearch={setSearchTerm}
         onOpenCart={() => setIsCartOpen(true)}
         activeCategory={activeCategory}
@@ -92,19 +91,17 @@ export default function Home() {
         ) : (
           <Catalog
             camisetas={camisasFiltradas}
-            onSelectCamisa={(camisa) => setSelectedCamisa(camisa)}
+            onSelectCamisa={setSelectedCamisa}
           />
         )}
       </div>
 
-      {selectedCamisa && (
-        <ProductModal
-          camisa={selectedCamisa}
-          isOpen={!!selectedCamisa}
-          onClose={() => setSelectedCamisa(null)}
-          onAddToCart={handleAddToCart}
-        />
-      )}
+      <ProductModal
+        camisa={selectedCamisa!}
+        isOpen={!!selectedCamisa}
+        onClose={() => setSelectedCamisa(null)}
+        onAddToCart={handleAddToCart}
+      />
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 

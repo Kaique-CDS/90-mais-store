@@ -10,7 +10,6 @@ export interface Product {
   preco: number;
   imagem_url: string;
   categoria?: string;
-  descricao?: string;
   galeria?: string[];
 }
 
