@@ -1,74 +1,48 @@
 "use client";
+import { Plus } from "lucide-react";
 
-import { useState } from "react";
-import AddToCartButton from "./addtocartbutton";
-
-export default function ProductCard({ camisa }: { camisa: any }) {
-  const [imgIndex, setImgIndex] = useState(0);
-
-  // Transforma o texto da galeria em uma lista de links
-  const fotosExtras =
-    camisa.galeria && typeof camisa.galeria === "string"
-      ? camisa.galeria.split(",").map((img: string) => img.trim())
-      : [];
-
-  // Junta a foto principal com as extras e remove links quebrados ou vazios
-  const imagens = [camisa.imagem_url, ...fotosExtras].filter(
-    (img) => img && img.length > 10,
-  );
-
-  const nextImg = () => setImgIndex((prev) => (prev + 1) % imagens.length);
-  const prevImg = () =>
-    setImgIndex((prev) => (prev - 1 + imagens.length) % imagens.length);
-
+export default function ProductCard({ camisa }: any) {
   return (
-    <div className="group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-lg overflow-hidden hover:border-red-600 transition-all duration-300 mx-auto w-full max-w-[320px]">
-      <div className="h-[280px] w-full bg-zinc-900 relative overflow-hidden shrink-0 group/carousel">
-        {imagens.length > 0 ? (
-          <>
-            <img
-              src={imagens[imgIndex]}
-              alt={camisa.nome}
-              className="object-cover w-full h-full transition-all duration-500"
-            />
+    <div className="group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden transition-all duration-300 hover:border-red-600/40 hover:shadow-[0_0_40px_rgba(220,38,38,0.1)]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900/40">
+        <img
+          src={camisa.imagem_url}
+          alt={camisa.nome}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        />
 
-            {imagens.length > 1 && (
-              <>
-                <button
-                  onClick={() => prevImg()}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/carousel:opacity-100 hover:bg-red-600 transition-all z-20"
-                >
-                  ❮
-                </button>
-                <button
-                  onClick={() => nextImg()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 flex items-center justify-center rounded-full opacity-0 group-hover/carousel:opacity-100 hover:bg-red-600 transition-all z-20"
-                >
-                  ❯
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-800 font-black italic text-4xl">
-            90+
-          </div>
-        )}
+        <div className="absolute top-4 left-4">
+          <span className="bg-black/80 backdrop-blur-md text-red-600 text-[9px] font-black px-2 py-1 rounded-md border border-red-600/20 uppercase tracking-widest">
+            {camisa.categoria}
+          </span>
+        </div>
+
+        {/* BOTÃO VER DETALHES AGORA VERMELHO */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <span className="bg-red-600 text-white font-black text-[10px] px-6 py-3 rounded-full uppercase tracking-tighter shadow-[0_0_20px_rgba(220,38,38,0.5)] transform translate-y-4 group-hover:translate-y-0 transition-transform">
+            Ver Detalhes
+          </span>
+        </div>
       </div>
 
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold uppercase tracking-tight mb-1 group-hover:text-red-500 transition-colors truncate">
+      <div className="p-5 flex flex-col gap-2">
+        <h3 className="text-zinc-100 font-bold text-sm uppercase truncate tracking-tight">
           {camisa.nome}
         </h3>
-        <p className="text-zinc-500 text-[10px] mb-4 line-clamp-2 uppercase">
-          {camisa.descricao || "Produto de alta qualidade 90+ Store"}
-        </p>
 
-        <div className="flex justify-between items-center mt-auto pt-3 border-t border-zinc-900">
-          <span className="text-xl font-black">
-            R$ {Number(camisa.preco).toFixed(2)}
-          </span>
-          <AddToCartButton produto={{ ...camisa, imagem_url: imagens[0] }} />
+        <div className="flex items-end justify-between">
+          <div className="flex flex-col">
+            <span className="text-[9px] text-zinc-600 font-bold uppercase">
+              A partir de
+            </span>
+            <span className="text-white font-black text-xl tracking-tighter">
+              R$ {Number(camisa.preco).toFixed(2)}
+            </span>
+          </div>
+
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-red-600 group-hover:border-red-600/30 transition-all">
+            <Plus size={18} />
+          </div>
         </div>
       </div>
     </div>
