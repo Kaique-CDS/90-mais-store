@@ -2,14 +2,23 @@
 
 import { Plus } from "lucide-react";
 import type { Product } from "@/components/cartcontext";
+import { getFakeOriginalPrice } from "@/lib/pricing";
+import { getDisplayCategory } from "@/lib/categories";
 
 interface ProductCardProps {
   camisa: Product;
+  index?: number; // para o stagger da animação
 }
 
-export default function ProductCard({ camisa }: ProductCardProps) {
+export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
+  const fakePrice = getFakeOriginalPrice(camisa.preco);
+  const displayCat = getDisplayCategory(camisa.categoria, camisa.nome);
+
   return (
-    <div className="group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden transition-all duration-300 hover:border-red-600/40 hover:shadow-[0_0_40px_rgba(220,38,38,0.1)]">
+    <div
+      className="card-animate group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden transition-all duration-300 hover:border-red-600/40 hover:shadow-[0_0_40px_rgba(220,38,38,0.1)]"
+      style={{ animationDelay: `${index * 55}ms` }}
+    >
       <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900/40">
         <img
           src={camisa.imagem_url}
@@ -27,17 +36,22 @@ export default function ProductCard({ camisa }: ProductCardProps) {
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-2">
+      <div className="p-4 flex flex-col gap-1.5">
         <h3 className="text-zinc-100 font-bold text-xs uppercase leading-tight tracking-tight line-clamp-2">
           {camisa.nome}
         </h3>
 
         <div className="flex items-end justify-between">
           <div className="flex flex-col">
-            <span className="text-[9px] text-zinc-600 font-bold uppercase">
-              A partir de
-            </span>
-            <span className="text-white font-black text-lg tracking-tighter">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-600 text-[9px] line-through">
+                R$ {fakePrice.toFixed(2)}
+              </span>
+              <span className="text-green-500 text-[8px] font-black uppercase">
+                OFERTA
+              </span>
+            </div>
+            <span className="text-white font-black text-lg tracking-tighter leading-none">
               R$ {Number(camisa.preco).toFixed(2)}
             </span>
           </div>

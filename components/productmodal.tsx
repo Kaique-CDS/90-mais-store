@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
-import { getPriceByCategory } from "@/lib/pricing";
+import { getPriceByCategory, getFakeOriginalPrice } from "@/lib/pricing";
 
 // ─── Tamanhos ─────────────────────────────────────────────────────────────────
 
@@ -147,17 +147,28 @@ export default function ProductModal({
     touchStartX.current = null;
   };
 
-  // Bloquear scroll do body
+  // Bloquear scroll do body e gerenciar tecla Escape
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showSizeChart) setShowSizeChart(false);
+        else if (isOpen) onClose();
+      }
+    };
+
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", handleKeyDown);
     } else {
       document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
     }
+    
     return () => {
       document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, showSizeChart, onClose]);
 
   if (!isOpen || !camisa) return null;
 
@@ -308,19 +319,28 @@ export default function ProductModal({
               {camisa.nome}
             </h2>
 
-            <p className="text-xl sm:text-2xl font-light text-zinc-100">
-              R${" "}
-              <span className="font-black text-white">
-                {effectivePrice.toFixed(2)}
-              </span>
-              {(priceModifier > 0 || wantsPersonalizacao) && (
-                <span className="text-zinc-500 text-xs sm:text-sm font-normal ml-2">
-                  (base R$ {basePrice.toFixed(2)}
-                  {priceModifier > 0 && ` + R$${priceModifier} tamanho`}
-                  {wantsPersonalizacao && " + R$70 personalização"})
+            <div className="flex items-end gap-3">
+              <div className="flex flex-col">
+                <span className="text-zinc-500 text-sm line-through">
+                  De R$ {getFakeOriginalPrice(basePrice).toFixed(2)}
                 </span>
+                <span className="text-2xl sm:text-3xl font-black text-white leading-none">
+                  Por R$ {effectivePrice.toFixed(2)}
+                </span>
+              </div>
+              
+              {(priceModifier > 0 || wantsPersonalizacao) && (
+                <div className="flex flex-col mb-0.5">
+                  <span className="text-zinc-500 text-[10px] font-normal leading-tight">
+                    (base R$ {basePrice.toFixed(2)})
+                  </span>
+                  <span className="text-zinc-500 text-[10px] font-normal leading-tight">
+                    {priceModifier > 0 && `+R$${priceModifier} tamanho `}
+                    {wantsPersonalizacao && "+R$70 pers."}
+                  </span>
+                </div>
               )}
-            </p>
+            </div>
           </div>
 
           {/* Seletor de Tamanho */}
@@ -350,7 +370,7 @@ export default function ProductModal({
                 >
                   <span>{s}</span>
                   {(s === "G1" || s === "G2") && (
-                    <span className="text-[8px] font-bold text-yellow-400 -mt-0.5">
+                    <span className="text-[8px] font-bold text-cyan-400 -mt-0.5">
                       +R$20
                     </span>
                   )}
@@ -375,7 +395,7 @@ export default function ProductModal({
               <div>
                 <p className="text-white font-black text-xs uppercase tracking-wide">
                   Personalização{" "}
-                  <span className="text-yellow-400">+R$70</span>
+                  <span className="text-cyan-400">+R$70</span>
                 </p>
                 <p className="text-zinc-500 text-[10px]">
                   Nome e/ou número no dorso da camisa

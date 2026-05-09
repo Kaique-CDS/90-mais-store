@@ -92,10 +92,15 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <Catalog
-            camisetas={camisasFiltradas}
-            onSelectCamisa={setSelectedCamisa}
-          />
+          <>
+            <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-6">
+              {camisasFiltradas.length} {camisasFiltradas.length === 1 ? "manto encontrado" : "mantos encontrados"}
+            </p>
+            <Catalog
+              camisetas={camisasFiltradas}
+              onSelectCamisa={setSelectedCamisa}
+            />
+          </>
         )}
       </div>
 

@@ -43,6 +43,13 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
+  // Fechar com Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && isOpen) onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
   const finalizarWhatsApp = () => {
     const linhas = [
       "Fala, equipe 90+! Tenho interesse nesse(s) manto(s):\n",
@@ -108,6 +115,20 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
         {/* Lista de itens */}
         <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 space-y-3">
+          {/* Banner de desconto animado */}
+          {desconto > 0 && (
+            <div className="discount-shimmer rounded-2xl px-4 py-3 flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎉</span>
+                <div>
+                  <p className="text-white font-black text-xs uppercase tracking-wide">Desconto Ativado!</p>
+                  <p className="text-green-100 text-[10px]">5% aplicado por comprar 2+ itens</p>
+                </div>
+              </div>
+              <span className="text-white font-black text-sm">- R$ {desconto.toFixed(2)}</span>
+            </div>
+          )}
+
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3">
               <ShoppingBag size={40} className="text-zinc-800" />
@@ -127,7 +148,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   <p className="text-red-600 text-[10px] font-black uppercase mt-0.5">
                     TAM: {item.size}
                     {item.priceModifier > 0 && (
-                      <span className="text-yellow-500 ml-1">(+R${item.priceModifier})</span>
+                      <span className="text-cyan-500 ml-1">(+R${item.priceModifier})</span>
                     )}
                   </p>
                   {item.personalizacao && (
@@ -136,7 +157,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                       {[item.personalizacao.nome, item.personalizacao.numero ? `#${item.personalizacao.numero}` : ""]
                         .filter(Boolean)
                         .join(" ")}
-                      <span className="text-yellow-500 ml-1">(+R$70)</span>
+                      <span className="text-cyan-500 ml-1">(+R$70)</span>
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-1">

@@ -21,13 +21,14 @@ export default function Catalog({ camisetas, onSelectCamisa }: CatalogProps) {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {camisetas.map((camisa) => (
+      {camisetas.map((camisa, index) => (
         <div
           key={camisa.id}
           onClick={() => onSelectCamisa(camisa)}
           className="cursor-pointer"
         >
-          <ProductCard camisa={camisa} />
+          {/* Passa o índice para o stagger da animação */}
+          <ProductCard camisa={camisa} index={index} />
         </div>
       ))}
     </div>
