@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
+import { getPriceByCategory } from "@/lib/pricing";
 
 // ─── Tamanhos ─────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,26 @@ const SIZE_MODIFIER: Record<Size, number> = {
 };
 
 const THUMBS_VISIBLE = 5;
+
+// ─── Tabela de medidas por modelo ─────────────────────────────────────────────
+
+/**
+ * Retorna o caminho da imagem da tabela de medidas de acordo com a categoria.
+ * Você pode substituir os caminhos pelos arquivos reais que nos enviar.
+ */
+function getSizeChartImage(displayCategory: string, nome: string): string {
+  const cat = displayCategory.toUpperCase().trim();
+  const nomeUpper = nome.toUpperCase();
+
+  // Versão Jogador
+  if (nomeUpper.includes("JOGADOR")) return "/Jogador.jpeg";
+  // Retrô
+  if (cat === "RETRO") return "/Retro.jpeg";
+  // Seleção — usa tabela Torcedor (mesmo corte) até enviar arte específica
+  if (cat === "SELEÇÃO") return "/Torcedor.jpeg";
+  // Padrão (torcedor/temporada)
+  return "/Torcedor.jpeg";
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -140,11 +161,18 @@ export default function ProductModal({
 
   if (!isOpen || !camisa) return null;
 
-  const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
-  const persValid = !wantsPersonalizacao || (persNome.trim() !== "" || persNumero.trim() !== "");
-  const canAdd = !!size && persValid;
-  const effectivePrice = camisa.preco + priceModifier + (wantsPersonalizacao ? 70 : 0);
   const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome);
+
+  // Preço calculado pela categoria (sobrescreve o preço do banco)
+  const basePrice = getPriceByCategory(displayCategory, camisa.nome, camisa.preco);
+  const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
+  // Nome válido: vazio (não preencheu) OU tem pelo menos 2 letras
+  const nomeValido = persNome.trim() === "" || persNome.trim().length >= 2;
+  const persValid = !wantsPersonalizacao || ((persNome.trim() !== "" || persNumero.trim() !== "") && nomeValido);
+  const canAdd = !!size && persValid;
+  const effectivePrice = basePrice + priceModifier + (wantsPersonalizacao ? 70 : 0);
+
+  const sizeChartImage = getSizeChartImage(displayCategory, camisa.nome);
 
   const prevImage = () => setCurrentIndex((p) => (p - 1 + imagens.length) % imagens.length);
   const nextImage = () => setCurrentIndex((p) => (p + 1) % imagens.length);
@@ -152,21 +180,25 @@ export default function ProductModal({
   const handleAdd = () => {
     if (!size || !persValid) return;
     const pers = wantsPersonalizacao ? { nome: persNome.trim(), numero: persNumero.trim() } : undefined;
-    onAddToCart(camisa, size, priceModifier, pers);
+    // Passa o produto com preço calculado
+    onAddToCart({ ...camisa, preco: basePrice }, size, priceModifier, pers);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-2 md:p-10">
+    <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-2 md:p-10">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/95 backdrop-blur-md"
         onClick={onClose}
       />
 
-      <div className="relative bg-zinc-950 border border-zinc-900 w-full max-w-5xl max-h-[98vh] md:max-h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
-        <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-4 md:p-8 flex flex-col items-center justify-center group">
+      {/* Modal — ocupa tela cheia no mobile, centralizado no desktop */}
+      <div className="relative bg-zinc-950 border border-zinc-900 w-full max-w-5xl max-h-[100dvh] sm:max-h-[98vh] md:max-h-[90vh] rounded-t-[2rem] sm:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
+
+        {/* ── GALERIA ── */}
+        <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-3 sm:p-4 md:p-8 flex flex-col items-center justify-center group">
           {imagens.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
@@ -178,7 +210,7 @@ export default function ProductModal({
           )}
 
           <div
-            className="w-full h-[260px] md:h-[460px] flex items-center justify-center select-none cursor-pointer"
+            className="w-full h-[220px] sm:h-[280px] md:h-[460px] flex items-center justify-center select-none cursor-pointer"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -202,10 +234,9 @@ export default function ProductModal({
             </button>
           )}
 
-          {/* Miniaturas — sem scrollbar, com navegação por setas */}
+          {/* Miniaturas */}
           {imagens.length > 1 && (
-            <div className="flex items-center gap-1.5 mt-4">
-              {/* Seta esquerda das thumbs */}
+            <div className="flex items-center gap-1.5 mt-2 sm:mt-4">
               {imagens.length > THUMBS_VISIBLE && (
                 <button
                   onClick={() => setThumbOffset((p) => Math.max(0, p - 1))}
@@ -217,8 +248,7 @@ export default function ProductModal({
                 </button>
               )}
 
-              {/* Thumbs visíveis */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2">
                 {imagens
                   .slice(thumbOffset, thumbOffset + THUMBS_VISIBLE)
                   .map((img, i) => (
@@ -228,7 +258,7 @@ export default function ProductModal({
                       alt={`Miniatura ${thumbOffset + i + 1}`}
                       loading="lazy"
                       onClick={() => setCurrentIndex(thumbOffset + i)}
-                      className={`w-12 h-12 md:w-14 md:h-14 rounded-xl object-cover cursor-pointer transition-all border-2 flex-shrink-0 ${
+                      className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl object-cover cursor-pointer transition-all border-2 flex-shrink-0 ${
                         currentIndex === thumbOffset + i
                           ? "border-red-600 scale-110"
                           : "border-transparent opacity-30 hover:opacity-100"
@@ -237,7 +267,6 @@ export default function ProductModal({
                   ))}
               </div>
 
-              {/* Seta direita das thumbs */}
               {imagens.length > THUMBS_VISIBLE && (
                 <button
                   onClick={() =>
@@ -257,36 +286,36 @@ export default function ProductModal({
         </div>
 
         {/* ── ÁREA DE COMPRA ── */}
-        <div className="w-full md:w-[45%] p-6 md:p-10 flex flex-col border-t md:border-t-0 md:border-l border-zinc-900 bg-zinc-950/50 overflow-y-auto">
+        <div className="w-full md:w-[45%] p-4 sm:p-6 md:p-10 flex flex-col border-t md:border-t-0 md:border-l border-zinc-900 bg-zinc-950/50 overflow-y-auto">
           <button
             onClick={onClose}
             aria-label="Fechar modal"
-            className="absolute top-6 right-8 text-zinc-500 hover:text-white transition-all hover:rotate-90 z-30"
+            className="absolute top-4 right-4 sm:top-6 sm:right-8 text-zinc-500 hover:text-white transition-all hover:rotate-90 z-30 bg-zinc-900/80 rounded-full p-1.5"
           >
-            <X size={28} />
+            <X size={22} />
           </button>
 
           {/* Categoria + Nome + Preço */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
               <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.4em]">
                 {displayCategory}
               </span>
             </div>
 
-            <h2 className="text-2xl md:text-4xl font-black text-white uppercase italic leading-none tracking-tighter mb-3">
+            <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-white uppercase italic leading-none tracking-tighter mb-2 sm:mb-3">
               {camisa.nome}
             </h2>
 
-            <p className="text-2xl font-light text-zinc-100">
+            <p className="text-xl sm:text-2xl font-light text-zinc-100">
               R${" "}
               <span className="font-black text-white">
                 {effectivePrice.toFixed(2)}
               </span>
               {(priceModifier > 0 || wantsPersonalizacao) && (
-                <span className="text-zinc-500 text-sm font-normal ml-2">
-                  (base R$ {camisa.preco.toFixed(2)}
+                <span className="text-zinc-500 text-xs sm:text-sm font-normal ml-2">
+                  (base R$ {basePrice.toFixed(2)}
                   {priceModifier > 0 && ` + R$${priceModifier} tamanho`}
                   {wantsPersonalizacao && " + R$70 personalização"})
                 </span>
@@ -295,8 +324,8 @@ export default function ProductModal({
           </div>
 
           {/* Seletor de Tamanho */}
-          <div className="mt-6">
-            <div className="flex justify-between items-center mb-3">
+          <div className="mt-4 sm:mt-6">
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                 Escolha o Tamanho
               </label>
@@ -313,7 +342,7 @@ export default function ProductModal({
                 <button
                   key={s}
                   onClick={() => setSize(s)}
-                  className={`px-4 h-12 rounded-2xl font-black transition-all border-2 flex flex-col items-center justify-center ${
+                  className={`px-4 h-11 sm:h-12 rounded-2xl font-black transition-all border-2 flex flex-col items-center justify-center ${
                     size === s
                       ? "bg-red-600 border-red-600 text-white scale-105 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
                       : "bg-transparent border-zinc-900 text-zinc-500 hover:border-zinc-700"
@@ -331,7 +360,7 @@ export default function ProductModal({
           </div>
 
           {/* Personalização */}
-          <div className="mt-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+          <div className="mt-4 sm:mt-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3 sm:p-4">
             <label className="flex items-center gap-3 cursor-pointer">
               <div
                 onClick={() => setWantsPersonalizacao((v) => !v)}
@@ -355,7 +384,7 @@ export default function ProductModal({
             </label>
 
             {wantsPersonalizacao && (
-              <div className="mt-4 flex gap-3">
+              <div className="mt-3 sm:mt-4 flex gap-3">
                 <div className="flex-1 relative">
                   <User
                     size={14}
@@ -367,8 +396,16 @@ export default function ProductModal({
                     value={persNome}
                     onChange={(e) => setPersNome(e.target.value.toUpperCase())}
                     maxLength={14}
-                    className="w-full bg-zinc-800 border border-zinc-700 text-white text-xs font-black uppercase tracking-widest py-3 pl-9 pr-3 rounded-xl outline-none focus:border-red-600 transition-all"
+                    minLength={2}
+                    className={`w-full bg-zinc-800 border text-white text-xs font-black uppercase tracking-widest py-3 pl-9 pr-3 rounded-xl outline-none transition-all ${
+                      persNome.trim().length === 1
+                        ? "border-red-500 focus:border-red-500"
+                        : "border-zinc-700 focus:border-red-600"
+                    }`}
                   />
+                  {persNome.trim().length === 1 && (
+                    <p className="text-red-500 text-[9px] mt-1 font-bold">Mínimo 2 letras</p>
+                  )}
                 </div>
                 <div className="w-24 relative">
                   <Hash
@@ -392,7 +429,7 @@ export default function ProductModal({
           </div>
 
           {/* Botões */}
-          <div className="flex flex-col gap-3 mt-6">
+          <div className="flex flex-col gap-3 mt-4 sm:mt-6">
             <button
               disabled={!canAdd}
               onClick={handleAdd}
@@ -406,6 +443,8 @@ export default function ProductModal({
                   ? "ADICIONADO!"
                   : !size
                   ? "SELECIONE O TAMANHO"
+                  : wantsPersonalizacao && persNome.trim().length === 1
+                  ? "NOME PRECISA TER 2+ LETRAS"
                   : wantsPersonalizacao && !persValid
                   ? "PREENCHA NOME OU NÚMERO"
                   : `ADICIONAR — R$ ${effectivePrice.toFixed(2)}`}
@@ -438,7 +477,7 @@ export default function ProductModal({
               <X size={32} />
             </button>
             <img
-              src="/tabela-medidas.png"
+              src={sizeChartImage}
               alt="Tabela de Medidas"
               className="w-full h-auto rounded-3xl shadow-2xl border border-zinc-800"
             />

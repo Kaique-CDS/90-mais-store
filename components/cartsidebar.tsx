@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useCart } from "@/components/cartcontext";
 import type { CartItem } from "@/components/cartcontext";
 import { X, Trash2, ShoppingBag, Plus, Minus, Trash } from "lucide-react";
+import { getFakeOriginalPrice } from "@/lib/pricing";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,10 +37,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     totalItens,
   } = useCart();
 
-  const [freteInput, setFreteInput] = useState("");
-  const freteValue = parseFloat(freteInput.replace(",", ".")) || 0;
-  const totalComFrete = total + freteValue;
-
   // Bloquear scroll do body enquanto sidebar está aberta
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -55,8 +52,8 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
       "",
       `Subtotal: R$ ${subtotal.toFixed(2)}`,
       totalItens >= 2 ? `Desconto 5%: - R$ ${desconto.toFixed(2)}` : null,
-      freteValue > 0 ? `Frete: R$ ${freteValue.toFixed(2)}` : "Frete: A combinar",
-      `*Total: R$ ${totalComFrete.toFixed(2)}*`,
+      `*Total: R$ ${total.toFixed(2)}*`,
+      "Frete: A combinar",
       "",
       "Fico no aguardo da confirmação para prosseguir!",
     ]
@@ -66,7 +63,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     window.open(`https://wa.me/5511945342493?text=${encodeURIComponent(linhas)}`, "_blank");
   };
 
-  const btnQty = "w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors";
+  const btnQty = "w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors";
 
   return (
     <>
@@ -78,16 +75,16 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
         onClick={onClose}
       />
 
-      {/* Painel lateral */}
+      {/* Painel lateral — ocupa toda a tela no mobile */}
       <div
-        className={`fixed inset-y-0 right-0 z-[1000] w-full max-w-md bg-zinc-950 border-l border-zinc-900 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 right-0 z-[1000] w-full sm:max-w-md bg-zinc-950 border-l border-zinc-900 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-900">
-          <h2 className="text-xl font-black uppercase italic text-white flex items-center gap-2">
-            <ShoppingBag className="text-red-600" size={22} />
+        <div className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-zinc-900">
+          <h2 className="text-lg sm:text-xl font-black uppercase italic text-white flex items-center gap-2">
+            <ShoppingBag className="text-red-600" size={20} />
             Seu Carrinho
             {totalItens > 0 && (
               <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md ml-1">
@@ -104,21 +101,13 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
             )}
             <button onClick={onClose} aria-label="Fechar carrinho"
               className="text-zinc-500 hover:text-white transition-colors p-2">
-              <X size={28} />
+              <X size={26} />
             </button>
           </div>
         </div>
 
-        {/* Frete grátis Sudeste */}
-        <div className="mx-6 mt-4 bg-green-950/40 border border-green-800/40 rounded-xl px-4 py-2.5 flex items-center gap-2">
-          <span className="text-lg">🚚</span>
-          <p className="text-green-400 text-[10px] font-black uppercase tracking-wider">
-            Frete grátis para SP, RJ, MG e ES
-          </p>
-        </div>
-
         {/* Lista de itens */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 space-y-3">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3">
               <ShoppingBag size={40} className="text-zinc-800" />
@@ -131,10 +120,10 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               <div key={item.cartId}
                 className="flex gap-3 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all">
                 <img src={item.imagem_url} alt={item.nome}
-                  className="w-16 h-16 object-cover rounded-lg bg-zinc-800 flex-shrink-0" />
+                  className="w-16 h-16 sm:w-18 sm:h-18 object-cover rounded-lg bg-zinc-800 flex-shrink-0" />
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-bold text-xs uppercase leading-tight truncate">{item.nome}</p>
+                  <p className="text-white font-bold text-xs uppercase leading-tight line-clamp-2">{item.nome}</p>
                   <p className="text-red-600 text-[10px] font-black uppercase mt-0.5">
                     TAM: {item.size}
                     {item.priceModifier > 0 && (
@@ -150,24 +139,29 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                       <span className="text-yellow-500 ml-1">(+R$70)</span>
                     </p>
                   )}
-                  <p className="text-zinc-300 font-black text-sm mt-1">
-                    R$ {(item.effectivePrice * item.quantity).toFixed(2)}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-zinc-300 font-black text-sm">
+                      R$ {(item.effectivePrice * item.quantity).toFixed(2)}
+                    </p>
+                    <p className="text-zinc-600 text-[10px] line-through">
+                      R$ {(getFakeOriginalPrice(item.effectivePrice) * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-between gap-1">
+                <div className="flex flex-col items-center justify-between gap-1 flex-shrink-0">
                   <div className="flex flex-col items-center gap-1">
                     <button onClick={() => incrementItem(item.cartId)} className={btnQty} aria-label="Aumentar quantidade">
-                      <Plus size={12} className="text-white" />
+                      <Plus size={13} className="text-white" />
                     </button>
-                    <span className="text-white font-black text-sm w-7 text-center">{item.quantity}</span>
+                    <span className="text-white font-black text-sm w-8 text-center">{item.quantity}</span>
                     <button onClick={() => decrementItem(item.cartId)} className={btnQty} aria-label="Diminuir quantidade">
-                      <Minus size={12} className="text-white" />
+                      <Minus size={13} className="text-white" />
                     </button>
                   </div>
                   <button onClick={() => removeFromCart(item.cartId)} aria-label={`Remover ${item.nome}`}
                     className="text-zinc-700 hover:text-red-500 transition-colors p-1">
-                    <Trash2 size={14} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
@@ -177,7 +171,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
         {/* Totais */}
         {cart.length > 0 && (
-          <div className="px-6 pb-6 pt-4 border-t border-zinc-900 space-y-3">
+          <div className="px-4 sm:px-6 pb-6 sm:pb-8 pt-4 border-t border-zinc-900 space-y-3">
             <div className="flex justify-between text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
               <span>Subtotal</span>
               <span>R$ {subtotal.toFixed(2)}</span>
@@ -190,26 +184,18 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               </div>
             )}
 
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 space-y-1">
-              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Valor do Frete (R$)</p>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0,00"
-                value={freteInput}
-                onChange={(e) => setFreteInput(e.target.value)}
-                className="w-full bg-transparent text-white font-bold text-sm outline-none placeholder:text-zinc-700"
-              />
-              <p className="text-zinc-600 text-[9px]">Informe o valor combinado com a equipe 90+</p>
+            <div className="flex justify-between text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
+              <span>Frete</span>
+              <span className="text-zinc-400">A combinar</span>
             </div>
 
-            <div className="flex justify-between text-white font-black text-2xl uppercase italic tracking-tighter">
+            <div className="flex justify-between text-white font-black text-xl sm:text-2xl uppercase italic tracking-tighter pt-1">
               <span>Total</span>
-              <span>R$ {totalComFrete.toFixed(2)}</span>
+              <span>R$ {total.toFixed(2)}</span>
             </div>
 
             <button onClick={finalizarWhatsApp}
-              className="w-full bg-[#D4FF00] text-black font-black py-4 rounded-2xl uppercase tracking-tighter hover:bg-[#b8dd00] transition-all text-sm">
+              className="w-full bg-[#D4FF00] text-black font-black py-4 rounded-2xl uppercase tracking-tighter hover:bg-[#b8dd00] active:scale-95 transition-all text-sm">
               Finalizar no WhatsApp
             </button>
           </div>

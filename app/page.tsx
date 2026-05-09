@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/components/cartcontext";
 import type { Product, Personalizacao } from "@/components/cartcontext";
-import { matchesCategory } from "@/lib/categories";
+import { matchesCategory, getDisplayCategory } from "@/lib/categories";
+import { getPriceByCategory } from "@/lib/pricing";
 
 import HeaderAcervo from "@/components/header";
 import Catalog from "@/components/catalog";
@@ -34,10 +35,12 @@ export default function Home() {
         if (error) throw error;
         if (data) {
           // Fix de nome enquanto DB não é atualizado (RLS bloqueia UPDATE com anon key)
-          const normalized = (data as Product[]).map((c) => ({
-            ...c,
-            nome: c.nome.replace(/\bFranca\b/g, "França"),
-          }));
+          const normalized = (data as Product[]).map((c) => {
+            const nomeFix = c.nome.replace(/\bFranca\b/g, "França");
+            const displayCat = getDisplayCategory(c.categoria, nomeFix);
+            const preco = getPriceByCategory(displayCat, nomeFix, c.preco);
+            return { ...c, nome: nomeFix, preco };
+          });
           setCamisas(normalized);
         }
       } catch (err) {
