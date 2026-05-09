@@ -35,12 +35,26 @@ export default function Home() {
         if (error) throw error;
         if (data) {
           // Fix de nome enquanto DB não é atualizado (RLS bloqueia UPDATE com anon key)
-          const normalized = (data as Product[]).map((c) => {
-            const nomeFix = c.nome.replace(/\bFranca\b/g, "França");
-            const displayCat = getDisplayCategory(c.categoria, nomeFix);
-            const preco = getPriceByCategory(displayCat, nomeFix, c.preco);
-            return { ...c, nome: nomeFix, preco };
-          });
+          const normalized = (data as Product[])
+            .filter((c) => {
+              if (!c.imagem_url) return true; // Mantém se não tiver imagem para tratar em outro lugar, ou pode retornar false
+              const imgLower = c.imagem_url.toLowerCase();
+              if (imgLower.endsWith(".heic") || imgLower.endsWith(".heif")) return false;
+              
+              const nomeLower = c.nome.toLowerCase();
+              if (nomeLower.includes("print") || nomeLower.includes("screenshot")) return false;
+              if ((nomeLower.includes("frança") || nomeLower.includes("franca")) && 
+                  nomeLower.includes("2026") && 
+                  (nomeLower.includes("2") || nomeLower.includes("ii") || nomeLower.includes("away"))) return false;
+              
+              return true;
+            })
+            .map((c) => {
+              const nomeFix = c.nome.replace(/\bFranca\b/g, "França");
+              const displayCat = getDisplayCategory(c.categoria, nomeFix);
+              const preco = getPriceByCategory(displayCat, nomeFix, c.preco);
+              return { ...c, nome: nomeFix, preco };
+            });
           setCamisas(normalized);
         }
       } catch (err) {
