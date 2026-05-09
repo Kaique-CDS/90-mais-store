@@ -60,7 +60,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
       `Subtotal: R$ ${subtotal.toFixed(2)}`,
       totalItens >= 2 ? `Desconto 5%: - R$ ${desconto.toFixed(2)}` : null,
       `*Total: R$ ${total.toFixed(2)}*`,
-      "Frete: A combinar",
+      "Frete: Grátis",
       "",
       "Fico no aguardo da confirmação para prosseguir!",
     ]
@@ -207,7 +207,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
             <div className="flex justify-between text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
               <span>Frete</span>
-              <span className="text-zinc-400">A combinar</span>
+              <span className="text-green-500 font-black">Grátis</span>
             </div>
 
             <div className="flex justify-between text-white font-black text-xl sm:text-2xl uppercase italic tracking-tighter pt-1">

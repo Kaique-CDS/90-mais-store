@@ -79,6 +79,18 @@ export default function ProductModal({
   const [thumbOffset, setThumbOffset] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
+  // Estados do Zoom
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setMousePos({ x, y });
+  };
+
 
   // Mostra imagens do DB imediatamente; escaneia mais em background
   useEffect(() => {
@@ -136,12 +148,25 @@ export default function ProductModal({
     });
   }, [currentIndex]);
 
-  // Handlers de touch para swipe
+  // Handlers de touch para swipe e pan (zoom)
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    const touch = e.touches[0];
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((touch.clientX - left) / width) * 100;
+    const y = ((touch.clientY - top) / height) * 100;
+    setMousePos({ 
+      x: Math.max(0, Math.min(100, x)), 
+      y: Math.max(0, Math.min(100, y)) 
+    });
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
+    if (touchStartX.current === null || isZoomed) return; // Bloqueia swipe quando está com zoom
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40) diff > 0 ? nextImage() : prevImage();
     touchStartX.current = null;
@@ -221,9 +246,13 @@ export default function ProductModal({
           )}
 
           <div
-            className="w-full h-[220px] sm:h-[280px] md:h-[460px] flex items-center justify-center select-none cursor-pointer"
+            className={`w-full h-[220px] sm:h-[280px] md:h-[460px] flex items-center justify-center select-none relative overflow-hidden rounded-xl ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onClick={() => setIsZoomed(!isZoomed)}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setIsZoomed(false)}
           >
             <img
               src={imagens[currentIndex] ?? camisa.imagem_url}
@@ -231,7 +260,8 @@ export default function ProductModal({
               loading="eager"
               decoding="async"
               fetchPriority="high"
-              className="max-w-full max-h-full object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"
+              className={`max-w-full max-h-full transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : "object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"}`}
+              style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
             />
           </div>
 

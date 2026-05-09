@@ -4,9 +4,7 @@ import WhatsAppButton from "@/components/whatsapp-button";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "90+ Store | Camisetas Premium 1:1",
-  description:
-    "Acervo exclusivo de camisetas de futebol premium qualidade 1:1. Nacionais, internacionais, retrô e seleções.",
+  title: "Catalogo 90+ Store",
 };
 
 export default function RootLayout({
