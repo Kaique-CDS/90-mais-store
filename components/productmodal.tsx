@@ -15,22 +15,22 @@ import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
 import { getPriceByCategory, getFakeOriginalPrice } from "@/lib/pricing";
 
-// ─── Tamanhos ─────────────────────────────────────────────────────────────────
+// ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
 const SIZES = ["P", "M", "G", "GG", "G1", "G2"] as const;
 type Size = (typeof SIZES)[number];
 
+// Modificadores de preço fixos para tamanhos especiais (G1 e G2 cobram +R$20)
 const SIZE_MODIFIER: Record<Size, number> = {
   P: 0, M: 0, G: 0, GG: 0, G1: 20, G2: 20,
 };
 
+// Quantidade máxima de miniaturas visíveis na barra inferior ao mesmo tempo
 const THUMBS_VISIBLE = 5;
 
-// ─── Tabela de medidas por modelo ─────────────────────────────────────────────
-
 /**
- * Retorna o caminho da imagem da tabela de medidas de acordo com a categoria.
- * Você pode substituir os caminhos pelos arquivos reais que nos enviar.
+ * Retorna o caminho da imagem da tabela de medidas de acordo com a categoria
+ * e o nome da camisa (ex: detecta se a camisa é versão JOGADOR).
  */
 function getSizeChartImage(displayCategory: string, nome: string): string {
   const cat = displayCategory.toUpperCase().trim();
@@ -46,12 +46,16 @@ function getSizeChartImage(displayCategory: string, nome: string): string {
   return "/Torcedor.jpeg";
 }
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+// ─── Propriedades ─────────────────────────────────────────────────────────────
 
 interface ProductModalProps {
+  /** Produto selecionado para exibir no Modal */
   camisa: Product;
+  /** Estado que controla se o Modal deve estar visível */
   isOpen: boolean;
+  /** Função de callback chamada quando o usuário clica para fechar o Modal */
   onClose: () => void;
+  /** Função de callback chamada quando o usuário clica no botão "Adicionar" */
   onAddToCart: (
     produto: Product,
     tamanho: string,
@@ -60,29 +64,42 @@ interface ProductModalProps {
   ) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
+/**
+ * Componente de Modal rico em detalhes.
+ * Apresenta a galeria interativa de imagens (com swipe e zoom dinâmico por mouse tracking),
+ * os seletores de tamanho e de personalização e finaliza o processo de adição ao carrinho.
+ */
 export default function ProductModal({
   camisa,
   isOpen,
   onClose,
   onAddToCart,
 }: ProductModalProps) {
+  // ─── Estados Locais ───
   const [size, setSize] = useState<Size | "">("");
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showSizeChart, setShowSizeChart] = useState(false);
-  const [addedFeedback, setAddedFeedback] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0); // Imagem principal ativa
+  const [showSizeChart, setShowSizeChart] = useState(false); // Modal sobreposto da tabela de medidas
+  const [addedFeedback, setAddedFeedback] = useState(false); // Feedback visual verde de "Adicionado"
   const [wantsPersonalizacao, setWantsPersonalizacao] = useState(false);
   const [persNome, setPersNome] = useState("");
   const [persNumero, setPersNumero] = useState("");
+  
+  // Imagens da Galeria
   const [imagens, setImagens] = useState<string[]>([]);
-  const [thumbOffset, setThumbOffset] = useState(0);
+  // Controle de paginação (offset) das miniaturas embaixo da foto principal
+  const [thumbOffset, setThumbOffset] = useState(0); 
+
+  // Referência para armazenar a posição inicial de um gesto de touch (Swipe no mobile)
   const touchStartX = useRef<number | null>(null);
 
-  // Estados do Zoom
+  // Estados do Zoom Inteligente
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
 
+  /**
+   * Captura o movimento do mouse na imagem (Desktop).
+   * Altera a posição focal do zoom baseado em onde o cursor está usando transform-origin.
+   */
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
@@ -91,11 +108,15 @@ export default function ProductModal({
     setMousePos({ x, y });
   };
 
-
-  // Mostra imagens do DB imediatamente; escaneia mais em background
+  /**
+   * Effect responsável por popular a galeria de imagens.
+   * O Supabase frequentemente possui apenas 1 foto cadastrada, mas fisicamente
+   * na pasta de mídia (ou servidor de imagens externas) existem arquivos sequenciais (1.jpg, 2.jpg...).
+   * Esse effect tenta carregar imagens em background até receber um erro 404 (Not Found).
+   */
   useEffect(() => {
     if (isOpen && camisa) {
-      // Reset imediato
+      // 1. Reseta os estados toda vez que o Modal abrir para um novo produto
       setCurrentIndex(0);
       setThumbOffset(0);
       setSize("");
@@ -105,41 +126,50 @@ export default function ProductModal({
       setPersNumero("");
       setShowSizeChart(false);
 
-      // Carrega o que já está no banco instantaneamente
+      // 2. Carrega o que já está garantido no banco instantaneamente para não deixar a UI vazia
       const initial = Array.from(
         new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
       ).slice(0, 10);
       setImagens(initial);
 
-      // Escaneia sequencialmente (para no primeiro 404) para encontrar extras
+      // 3. Verifica se a URL da imagem termina num padrão "numero.jpg" (ex: "camisa-1.jpg")
       const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
       if (!urlMatch) return;
-      const baseUrl = urlMatch[1];
+      const baseUrl = urlMatch[1]; // O diretório base sem o numero (ex: "https://.../camisa-")
 
       let cancelled = false;
+
+      // Função assíncrona que escaneia proativamente imagens adjacentes (2.jpg, 3.jpg...)
       const scan = async () => {
         const found: string[] = [];
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 10; i++) { // Limite máximo de 10 fotos por produto
           if (cancelled) return;
           const url = `${baseUrl}${i}.jpg`;
           try {
+            // Fazemos um request HEAD (muito rápido, sem baixar o corpo da imagem)
             const res = await fetch(url, { method: "HEAD" });
             if (res.ok) found.push(url);
-            else break; // para no primeiro 404
+            else break; // Para o loop no primeiro 404 encontrado (fim da sequencia)
           } catch {
             break;
           }
         }
+        // Se encontramos fotos novas, atualizamos a galeria
         if (!cancelled && found.length > initial.length) {
           setImagens(found);
         }
       };
       scan();
+
+      // Cleanup do useEffect previne que um escaneamento antigo altere imagens de um novo produto clicado rapidamente
       return () => { cancelled = true; };
     }
   }, [isOpen, camisa]);
 
-  // Thumb window acompanha currentIndex automaticamente
+  /** 
+   * Sincroniza a barra de miniaturas para que ela role automaticamente caso 
+   * o usuário use as setas principais e a imagem saia do campo de visão das miniaturas atuais.
+   */
   useEffect(() => {
     setThumbOffset((prev) => {
       if (currentIndex < prev) return currentIndex;
@@ -148,31 +178,37 @@ export default function ProductModal({
     });
   }, [currentIndex]);
 
-  // Handlers de touch para swipe e pan (zoom)
+  // ─── Handlers de Touch para Mobile ───
+
+  /** Registra a coordenada X onde o usuário tocou na tela pela primeira vez. */
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
 
+  /** Simula o hover do mouse, movendo a lupa do zoom onde o dedo do usuário está arrastando. */
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
     const touch = e.touches[0];
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((touch.clientX - left) / width) * 100;
     const y = ((touch.clientY - top) / height) * 100;
+    // Math.max e min evitam que o transform saia da borda limite (0-100%)
     setMousePos({ 
       x: Math.max(0, Math.min(100, x)), 
       y: Math.max(0, Math.min(100, y)) 
     });
   };
 
+  /** Ao soltar o dedo, verifica se houve um arrasto longo na horizontal e troca a imagem (Swipe). */
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || isZoomed) return; // Bloqueia swipe quando está com zoom
+    if (touchStartX.current === null || isZoomed) return; // Bloqueia swipe quando a imagem está com zoom
     const diff = touchStartX.current - e.changedTouches[0].clientX;
+    // Sensibilidade de 40px
     if (Math.abs(diff) > 40) diff > 0 ? nextImage() : prevImage();
     touchStartX.current = null;
   };
 
-  // Bloquear scroll do body e gerenciar tecla Escape
+  /** Configura listeners globais de Scroll e Escape da janela ao abrir/fechar. */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -197,44 +233,57 @@ export default function ProductModal({
 
   if (!isOpen || !camisa) return null;
 
-  const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome);
+  // ─── Cálculos de Preço e Validação ───
 
-  // Preço calculado pela categoria (sobrescreve o preço do banco)
+  const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome);
+  // O preço exibido deve seguir as regras de negócio em vez do banco de dados cego
   const basePrice = getPriceByCategory(displayCategory, camisa.nome, camisa.preco);
   const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
-  // Nome válido: vazio (não preencheu) OU tem pelo menos 2 letras
+  
+  // Regra: Nome válido se deixado em branco (caso a pessoa só queira um número) 
+  // OU se tiver pelo menos 2 letras (impede 'A' solto).
   const nomeValido = persNome.trim() === "" || persNome.trim().length >= 2;
+  // Regra de personalização global: Se quer personalizar, precisa preencher ou nome, ou número, e eles devem ser válidos.
   const persValid = !wantsPersonalizacao || ((persNome.trim() !== "" || persNumero.trim() !== "") && nomeValido);
+  
+  // Só podemos adicionar ao carrinho se um tamanho foi selecionado E a validação de texto passou
   const canAdd = !!size && persValid;
   const effectivePrice = basePrice + priceModifier + (wantsPersonalizacao ? 70 : 0);
 
   const sizeChartImage = getSizeChartImage(displayCategory, camisa.nome);
 
+  // Funções de navegação circular da galeria
   const prevImage = () => setCurrentIndex((p) => (p - 1 + imagens.length) % imagens.length);
   const nextImage = () => setCurrentIndex((p) => (p + 1) % imagens.length);
 
+  /** Prepara os dados validados e envia para o Contexto de Carrinho */
   const handleAdd = () => {
     if (!size || !persValid) return;
     const pers = wantsPersonalizacao ? { nome: persNome.trim(), numero: persNumero.trim() } : undefined;
-    // Passa o produto com preço calculado
+    
+    // Mandamos o produto usando o 'basePrice' calculado como preço da camisa, ignorando possível erro do DB
     onAddToCart({ ...camisa, preco: basePrice }, size, priceModifier, pers);
+    
+    // Feedback visual temporário antes de fechar/limpar
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
   };
 
   return (
     <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-2 md:p-10">
-      {/* Backdrop */}
+      {/* Backdrop (Camada desfocada do fundo) */}
       <div
         className="absolute inset-0 bg-black/95 backdrop-blur-md"
         onClick={onClose}
       />
 
-      {/* Modal — ocupa tela cheia no mobile, centralizado no desktop */}
+      {/* Janela Principal do Modal */}
       <div className="relative bg-zinc-950 border border-zinc-900 w-full max-w-5xl max-h-[100dvh] sm:max-h-[98vh] md:max-h-[90vh] rounded-t-[2rem] sm:rounded-[2.5rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
 
-        {/* ── GALERIA ── */}
+        {/* ── SEÇÃO DA ESQUERDA: GALERIA DE FOTOS ── */}
         <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-3 sm:p-4 md:p-8 flex flex-col items-center justify-center group">
+          
+          {/* Botão Flutuante (Seta Esquerda) */}
           {imagens.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
@@ -245,6 +294,7 @@ export default function ProductModal({
             </button>
           )}
 
+          {/* Área Interativa da Foto Principal (Zoom & Swipe) */}
           <div
             className={`w-full h-[220px] sm:h-[280px] md:h-[460px] flex items-center justify-center select-none relative overflow-hidden rounded-xl ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
             onTouchStart={handleTouchStart}
@@ -265,6 +315,7 @@ export default function ProductModal({
             />
           </div>
 
+          {/* Botão Flutuante (Seta Direita) */}
           {imagens.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); nextImage(); }}
@@ -275,9 +326,10 @@ export default function ProductModal({
             </button>
           )}
 
-          {/* Miniaturas */}
+          {/* Barra de Miniaturas (Thumbnails) na base */}
           {imagens.length > 1 && (
             <div className="flex items-center gap-1.5 mt-2 sm:mt-4">
+              {/* Botão para rolar miniaturas para trás */}
               {imagens.length > THUMBS_VISIBLE && (
                 <button
                   onClick={() => setThumbOffset((p) => Math.max(0, p - 1))}
@@ -289,6 +341,7 @@ export default function ProductModal({
                 </button>
               )}
 
+              {/* Rotação e Renderização dos pequenos quadrados de fotos */}
               <div className="flex gap-1.5 sm:gap-2">
                 {imagens
                   .slice(thumbOffset, thumbOffset + THUMBS_VISIBLE)
@@ -308,6 +361,7 @@ export default function ProductModal({
                   ))}
               </div>
 
+              {/* Botão para rolar miniaturas para frente */}
               {imagens.length > THUMBS_VISIBLE && (
                 <button
                   onClick={() =>
@@ -326,8 +380,9 @@ export default function ProductModal({
           )}
         </div>
 
-        {/* ── ÁREA DE COMPRA ── */}
+        {/* ── SEÇÃO DA DIREITA: ÁREA DE COMPRA/FORMS ── */}
         <div className="w-full md:w-[45%] p-4 sm:p-6 md:p-10 flex flex-col border-t md:border-t-0 md:border-l border-zinc-900 bg-zinc-950/50 overflow-y-auto">
+          {/* Botão de Fechar Superior */}
           <button
             onClick={onClose}
             aria-label="Fechar modal"
@@ -359,6 +414,7 @@ export default function ProductModal({
                 </span>
               </div>
               
+              {/* Exibe breakdown de valores caso haja adicionais ativos */}
               {(priceModifier > 0 || wantsPersonalizacao) && (
                 <div className="flex flex-col mb-0.5">
                   <span className="text-zinc-500 text-[10px] font-normal leading-tight">
@@ -379,6 +435,7 @@ export default function ProductModal({
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                 Escolha o Tamanho
               </label>
+              {/* Link que abre a tabela de medidas */}
               <button
                 onClick={() => setShowSizeChart(true)}
                 className="text-red-600 text-[9px] font-black underline flex items-center gap-1 hover:text-red-500"
@@ -387,6 +444,7 @@ export default function ProductModal({
               </button>
             </div>
 
+            {/* Grid flexível de botões de tamanho */}
             <div className="flex flex-wrap gap-2">
               {SIZES.map((s) => (
                 <button
@@ -399,6 +457,7 @@ export default function ProductModal({
                   }`}
                 >
                   <span>{s}</span>
+                  {/* Etiqueta +R$20 no botão se for Plus Size */}
                   {(s === "G1" || s === "G2") && (
                     <span className="text-[8px] font-bold text-cyan-400 -mt-0.5">
                       +R$20
@@ -409,8 +468,9 @@ export default function ProductModal({
             </div>
           </div>
 
-          {/* Personalização */}
+          {/* Módulo de Personalização de Camisa */}
           <div className="mt-4 sm:mt-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3 sm:p-4">
+            {/* Checkbox customizado para habilitar os campos */}
             <label className="flex items-center gap-3 cursor-pointer">
               <div
                 onClick={() => setWantsPersonalizacao((v) => !v)}
@@ -433,6 +493,7 @@ export default function ProductModal({
               </div>
             </label>
 
+            {/* Campos de Nome e Número exibidos apenas se checkbox estiver marcado */}
             {wantsPersonalizacao && (
               <div className="mt-3 sm:mt-4 flex gap-3">
                 <div className="flex-1 relative">
@@ -449,10 +510,11 @@ export default function ProductModal({
                     minLength={2}
                     className={`w-full bg-zinc-800 border text-white text-xs font-black uppercase tracking-widest py-3 pl-9 pr-3 rounded-xl outline-none transition-all ${
                       persNome.trim().length === 1
-                        ? "border-red-500 focus:border-red-500"
+                        ? "border-red-500 focus:border-red-500" // Cor de erro se digitou apenas 1 letra
                         : "border-zinc-700 focus:border-red-600"
                     }`}
                   />
+                  {/* Aviso de erro sob o campo de nome */}
                   {persNome.trim().length === 1 && (
                     <p className="text-red-500 text-[9px] mt-1 font-bold">Mínimo 2 letras</p>
                   )}
@@ -468,6 +530,7 @@ export default function ProductModal({
                     placeholder="N°"
                     value={persNumero}
                     onChange={(e) => {
+                      // Remove qualquer caractere que não seja número (D)
                       const val = e.target.value.replace(/\D/g, "");
                       if (val.length <= 2) setPersNumero(val);
                     }}
@@ -478,7 +541,7 @@ export default function ProductModal({
             )}
           </div>
 
-          {/* Botões */}
+          {/* Botões Inferiores Principais (Adicionar ao carrinho ou Fechar) */}
           <div className="flex flex-col gap-3 mt-4 sm:mt-6">
             <button
               disabled={!canAdd}
@@ -489,6 +552,7 @@ export default function ProductModal({
             >
               {addedFeedback ? <Check size={20} /> : <ShoppingBag size={20} />}
               <span>
+                {/* Lógica de mensagens de erro ou sucesso dinâmicas no botão */}
                 {addedFeedback
                   ? "ADICIONADO!"
                   : !size
@@ -511,7 +575,8 @@ export default function ProductModal({
         </div>
       </div>
 
-      {/* OVERLAY TABELA DE MEDIDAS */}
+      {/* OVERLAY SEPARADO: TABELA DE MEDIDAS */}
+      {/* Quando a tabela de medidas for acionada, ela renderiza sobre toda a tela */}
       {showSizeChart && (
         <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4">
           <div
