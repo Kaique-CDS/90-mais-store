@@ -202,6 +202,7 @@ export default function Home() {
 
       {/* ── MODAIS E SOBREPOSIÇÕES ── */}
       <ProductModal
+        key={selectedCamisa?.id ?? "empty-modal"}
         camisa={selectedCamisa!}
         isOpen={!!selectedCamisa} // Modal fica aberto se houver uma camisa selecionada
         onClose={() => setSelectedCamisa(null)}
