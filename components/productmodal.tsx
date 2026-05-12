@@ -306,15 +306,6 @@ export default function ProductModal({
         {/* ── SEÇÃO DA ESQUERDA: GALERIA DE FOTOS ── */}
         <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-3 sm:p-4 md:p-8 flex flex-col items-center justify-center group">
           
-          {/* Botão Flutuante (Expandir Tela Cheia) */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
-            aria-label="Expandir imagem"
-            className="absolute top-2 right-2 md:top-4 md:right-4 z-20 p-2 md:p-3 rounded-full bg-black/80 text-white transition-all hover:bg-red-600 shadow-lg"
-          >
-            <Maximize size={20} />
-          </button>
-
           {/* Botão Flutuante (Seta Esquerda) */}
           {imagens.length > 1 && (
             <button
@@ -345,6 +336,15 @@ export default function ProductModal({
               className={`object-contain transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : "drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"}`}
               style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
             />
+
+            {/* Botão Flutuante (Expandir Tela Cheia) - Movido para o canto inferior direito da imagem */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
+              aria-label="Expandir imagem"
+              className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-30 p-2.5 rounded-full bg-black/70 text-white backdrop-blur-sm transition-all hover:bg-red-600 shadow-xl border border-white/10 flex items-center justify-center"
+            >
+              <Maximize size={20} />
+            </button>
           </div>
 
           {/* Botão Flutuante (Seta Direita) */}
