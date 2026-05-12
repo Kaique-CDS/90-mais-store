@@ -67,7 +67,7 @@ export default function Home() {
               // Filtro Específico: Remove versões duplicadas/secundárias da camisa da França de 2026
               if ((nomeLower.includes("frança") || nomeLower.includes("franca")) && 
                   nomeLower.includes("2026") && 
-                  (nomeLower.includes("2") || nomeLower.includes("ii") || nomeLower.includes("away"))) return false;
+                  /\b(ii|away|2)\b/.test(nomeLower)) return false;
               
               return true;
             })
