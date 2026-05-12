@@ -26,7 +26,7 @@ export default function Home() {
   const [selectedCamisa, setSelectedCamisa] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   // Controle de paginação (Infinite Scroll)
   const [visibleCount, setVisibleCount] = useState(12);
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -47,28 +47,28 @@ export default function Home() {
           .order("nome", { ascending: true });
 
         if (error) throw error;
-        
+
         if (data) {
           // Fase de Limpeza e Normalização dos Dados
           // Removemos produtos sujos da resposta antes de salvar no estado
           const normalized = (data as Product[])
             .filter((c) => {
               // Mantém produtos sem imagem para tratar em outro lugar, se necessário
-              if (!c.imagem_url) return true; 
-              
+              if (!c.imagem_url) return true;
+
               const imgLower = c.imagem_url.toLowerCase();
               // Filtro de Segurança: Bloqueia imagens no formato HEIC (iPhone) pois não renderizam no navegador
               if (imgLower.endsWith(".heic") || imgLower.endsWith(".heif")) return false;
-              
+
               const nomeLower = c.nome.toLowerCase();
               // Filtro de Segurança: Bloqueia produtos marcados como 'print' ou 'screenshot'
               if (nomeLower.includes("print") || nomeLower.includes("screenshot")) return false;
-              
+
               // Filtro Específico: Remove versões duplicadas/secundárias da camisa da França de 2026
-              if ((nomeLower.includes("frança") || nomeLower.includes("franca")) && 
-                  nomeLower.includes("2026") && 
-                  /\b(ii|away|2)\b/.test(nomeLower)) return false;
-              
+              if ((nomeLower.includes("frança") || nomeLower.includes("franca")) &&
+                nomeLower.includes("2026") &&
+                /\b(ii|away|2)\b/.test(nomeLower)) return false;
+
               return true;
             })
             .map((c) => {
@@ -80,7 +80,7 @@ export default function Home() {
               const preco = getPriceByCategory(displayCat, nomeFix, c.preco);
               return { ...c, nome: nomeFix, preco };
             });
-            
+
           setCamisas(normalized);
         }
       } catch (err) {
@@ -242,7 +242,7 @@ export default function Home() {
         </a>
 
         <p className="text-zinc-700 font-black uppercase italic text-[10px] tracking-[0.5em]">
-          90+ Store • Qualidade Premium 1:1 • 2026
+          90+ Store • Qualidade Premium • 2026
         </p>
       </footer>
     </main>

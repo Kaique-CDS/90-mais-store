@@ -308,15 +308,15 @@ export default function ProductModal({
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
               aria-label="Imagem anterior"
-              className="absolute left-2 md:left-4 z-20 p-2 md:p-3 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600"
+              className="absolute left-2 md:left-4 z-20 p-3 md:p-3 rounded-full bg-black/80 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={28} />
             </button>
           )}
 
           {/* Área Interativa da Foto Principal (Zoom & Swipe) */}
           <div
-            className={`w-full h-[220px] sm:h-[280px] md:h-[460px] flex items-center justify-center select-none relative overflow-hidden rounded-xl ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+            className={`w-full h-[300px] sm:h-[350px] md:h-[460px] flex items-center justify-center select-none relative overflow-hidden rounded-xl ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -340,9 +340,9 @@ export default function ProductModal({
             <button
               onClick={(e) => { e.stopPropagation(); nextImage(); }}
               aria-label="Próxima imagem"
-              className="absolute right-2 md:right-4 z-20 p-2 md:p-3 rounded-full bg-black/50 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600"
+              className="absolute right-2 md:right-4 z-20 p-3 md:p-3 rounded-full bg-black/80 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={28} />
             </button>
           )}
 
