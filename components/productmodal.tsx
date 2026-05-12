@@ -11,6 +11,7 @@ import {
   Ruler,
   User,
   Hash,
+  Maximize,
 } from "lucide-react";
 import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
@@ -80,6 +81,7 @@ export default function ProductModal({
   const [size, setSize] = useState<Size | "">("");
   const [currentIndex, setCurrentIndex] = useState(0); // Imagem principal ativa
   const [showSizeChart, setShowSizeChart] = useState(false); // Modal sobreposto da tabela de medidas
+  const [isFullscreen, setIsFullscreen] = useState(false); // Galeria em tela cheia
   const [addedFeedback, setAddedFeedback] = useState(false); // Feedback visual verde de "Adicionado"
   const [wantsPersonalizacao, setWantsPersonalizacao] = useState(false);
   const [persNome, setPersNome] = useState("");
@@ -106,6 +108,7 @@ export default function ProductModal({
     setPersNome("");
     setPersNumero("");
     setShowSizeChart(false);
+    setIsFullscreen(false);
     
     const initial = Array.from(
       new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
@@ -303,6 +306,15 @@ export default function ProductModal({
         {/* ── SEÇÃO DA ESQUERDA: GALERIA DE FOTOS ── */}
         <div className="relative w-full md:w-[55%] bg-zinc-900/20 p-3 sm:p-4 md:p-8 flex flex-col items-center justify-center group">
           
+          {/* Botão Flutuante (Expandir Tela Cheia) */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsFullscreen(true); }}
+            aria-label="Expandir imagem"
+            className="absolute top-2 right-2 md:top-4 md:right-4 z-20 p-2 md:p-3 rounded-full bg-black/80 text-white transition-all hover:bg-red-600 shadow-lg"
+          >
+            <Maximize size={20} />
+          </button>
+
           {/* Botão Flutuante (Seta Esquerda) */}
           {imagens.length > 1 && (
             <button
@@ -620,6 +632,60 @@ export default function ProductModal({
               src={sizeChartImage}
               alt="Tabela de Medidas"
               className="w-full h-auto rounded-3xl shadow-2xl border border-zinc-800"
+            />
+          </div>
+        </div>
+      )}
+      {/* OVERLAY SEPARADO: TELA CHEIA (FULLSCREEN ZOOM) */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[1005] bg-black flex flex-col">
+          {/* Botão Fechar bem visível */}
+          <button
+            onClick={() => { setIsZoomed(false); setIsFullscreen(false); }}
+            className="absolute top-6 right-6 sm:top-8 sm:right-8 z-50 bg-red-600 text-white p-3 sm:p-4 rounded-full shadow-2xl hover:bg-red-700 transition-colors"
+            aria-label="Sair da tela cheia"
+          >
+            <X size={28} />
+          </button>
+
+          {/* Seta Esquerda */}
+          {imagens.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); prevImage(); }}
+              className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-20 p-3 sm:p-5 rounded-full bg-black/80 text-white transition-all hover:bg-red-600 shadow-xl"
+            >
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
+          {/* Seta Direita */}
+          {imagens.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); nextImage(); }}
+              className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-20 p-3 sm:p-5 rounded-full bg-black/80 text-white transition-all hover:bg-red-600 shadow-xl"
+            >
+              <ChevronRight size={32} />
+            </button>
+          )}
+
+          {/* Área Interativa da Tela Cheia */}
+          <div
+            className={`flex-1 w-full h-full flex items-center justify-center select-none overflow-hidden ${isZoomed ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={() => setIsZoomed(!isZoomed)}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => setIsZoomed(false)}
+          >
+            <Image
+              src={imagens[currentIndex] ?? camisa.imagem_url}
+              alt={`${camisa.nome} — foto ${currentIndex + 1} em tela cheia`}
+              priority
+              fill
+              sizes="100vw"
+              className={`object-contain transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : ""}`}
+              style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
             />
           </div>
         </div>
