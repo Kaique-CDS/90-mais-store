@@ -140,24 +140,30 @@ export default function ProductModal({
 
       let cancelled = false;
 
-      // Função assíncrona que escaneia proativamente imagens adjacentes (2.jpg, 3.jpg...)
+      // Função assíncrona que escaneia proativamente imagens adjacentes (2.jpg, 3.jpg...) em paralelo!
       const scan = async () => {
-        const found: string[] = [];
-        for (let i = 1; i <= 10; i++) { // Limite máximo de 10 fotos por produto
-          if (cancelled) return;
+        const promises = [];
+        for (let i = 1; i <= 10; i++) {
           const url = `${baseUrl}${i}.jpg`;
-          try {
-            // Fazemos um request HEAD (muito rápido, sem baixar o corpo da imagem)
-            const res = await fetch(url, { method: "HEAD" });
-            if (res.ok) found.push(url);
-            else break; // Para o loop no primeiro 404 encontrado (fim da sequencia)
-          } catch {
-            break;
-          }
+          promises.push(
+            fetch(url, { method: "HEAD" })
+              .then((res) => (res.ok ? url : null))
+              .catch(() => null)
+          );
         }
-        // Se encontramos fotos novas, atualizamos a galeria
-        if (!cancelled && found.length > initial.length) {
-          setImagens(found);
+        
+        const results = await Promise.all(promises);
+        if (cancelled) return;
+        
+        // Filtra os nulls e extrai as URLs válidas mantendo a ordem
+        const found = results.filter(Boolean) as string[];
+        
+        // Mescla as imagens do banco com as descobertas pelo scan sem duplicatas
+        const combined = Array.from(new Set([...initial, ...found])).slice(0, 10);
+        
+        // Se a mescla encontrou mais imagens do que tínhamos inicialmente, atualiza
+        if (combined.length > initial.length) {
+          setImagens(combined);
         }
       };
       scan();
