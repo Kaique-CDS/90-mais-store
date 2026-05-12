@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Plus } from "lucide-react";
 import type { Product } from "@/components/cartcontext";
 import { getFakeOriginalPrice } from "@/lib/pricing";
@@ -35,12 +36,12 @@ export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
     >
       {/* Container da Imagem */}
       <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900/40">
-        <img
+        <Image
           src={camisa.imagem_url}
           alt={camisa.nome}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-110"
         />
 
         {/* Overlay translúcido com botão "Ver Detalhes" que aparece apenas no hover */}

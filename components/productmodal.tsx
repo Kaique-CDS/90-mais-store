@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   X,
   ChevronLeft,
@@ -304,13 +305,13 @@ export default function ProductModal({
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setIsZoomed(false)}
           >
-            <img
+            <Image
               src={imagens[currentIndex] ?? camisa.imagem_url}
               alt={`${camisa.nome} — foto ${currentIndex + 1}`}
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-              className={`max-w-full max-h-full transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : "object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"}`}
+              priority
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className={`object-contain transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : "drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"}`}
               style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
             />
           </div>
@@ -346,18 +347,23 @@ export default function ProductModal({
                 {imagens
                   .slice(thumbOffset, thumbOffset + THUMBS_VISIBLE)
                   .map((img, i) => (
-                    <img
+                    <div
                       key={thumbOffset + i}
-                      src={img}
-                      alt={`Miniatura ${thumbOffset + i + 1}`}
-                      loading="lazy"
                       onClick={() => setCurrentIndex(thumbOffset + i)}
-                      className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl object-cover cursor-pointer transition-all border-2 flex-shrink-0 ${
+                      className={`relative w-10 h-10 sm:w-14 sm:h-14 rounded-xl overflow-hidden cursor-pointer transition-all border-2 flex-shrink-0 ${
                         currentIndex === thumbOffset + i
                           ? "border-red-600 scale-110"
                           : "border-transparent opacity-30 hover:opacity-100"
                       }`}
-                    />
+                    >
+                      <Image
+                        src={img}
+                        alt={`Miniatura ${thumbOffset + i + 1}`}
+                        fill
+                        sizes="60px"
+                        className="object-cover"
+                      />
+                    </div>
                   ))}
               </div>
 

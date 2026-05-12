@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useCart } from "@/components/cartcontext";
 import type { Product, Personalizacao } from "@/components/cartcontext";
@@ -26,6 +26,10 @@ export default function Home() {
   const [selectedCamisa, setSelectedCamisa] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Controle de paginação (Infinite Scroll)
+  const [visibleCount, setVisibleCount] = useState(12);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const { addToCart } = useCart();
 
@@ -90,6 +94,13 @@ export default function Home() {
   }, []);
 
   /**
+   * Reseta o contador de exibição caso o usuário digite uma busca ou troque de categoria.
+   */
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [searchTerm, activeCategory]);
+
+  /**
    * Filtro Dinâmico.
    * Recalcula a lista de camisas visíveis sempre que o `searchTerm`, `activeCategory` ou a lista base mudar.
    */
@@ -105,6 +116,33 @@ export default function Home() {
     // Só exibe se passar em AMBOS os filtros
     return matchSearch && matchCat;
   });
+
+  // Fatia o array total para exibir apenas a quantidade controlada pelo visibleCount
+  const camisasVisiveis = camisasFiltradas.slice(0, visibleCount);
+
+  /**
+   * Intersection Observer para o Scroll Infinito.
+   * Quando o elemento alvo (`observerTarget`) entrar na tela, aumentamos o `visibleCount`.
+   */
+  useEffect(() => {
+    // Não inicializa o observer se a lista inteira já estiver na tela ou se estiver carregando a API
+    if (loading || visibleCount >= camisasFiltradas.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 12);
+        }
+      },
+      { rootMargin: "200px" } // Dispara 200px antes de chegar no final para uma transição suave
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loading, visibleCount, camisasFiltradas.length]);
 
   /**
    * Função ponte entre o Modal do Produto e o Contexto do Carrinho.
@@ -148,9 +186,16 @@ export default function Home() {
               {camisasFiltradas.length} {camisasFiltradas.length === 1 ? "manto encontrado" : "mantos encontrados"}
             </p>
             <Catalog
-              camisetas={camisasFiltradas}
+              camisetas={camisasVisiveis}
               onSelectCamisa={setSelectedCamisa}
             />
+
+            {/* Elemento alvo invisível para disparar o scroll infinito */}
+            {visibleCount < camisasFiltradas.length && (
+              <div ref={observerTarget} className="w-full h-20 flex items-center justify-center mt-8">
+                <div className="w-8 h-8 border-4 border-zinc-800 border-t-red-600 rounded-full animate-spin" />
+              </div>
+            )}
           </>
         )}
       </div>
