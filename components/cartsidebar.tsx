@@ -52,8 +52,18 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   // Efeito para bloquear o scroll da página de fundo (body) 
   // enquanto a sidebar lateral do carrinho estiver aberta.
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }
+    
+    return () => { 
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
   }, [isOpen]);
 
   // Efeito para permitir fechar a sidebar apertando a tecla ESC.
