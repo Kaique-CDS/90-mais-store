@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,6 +72,28 @@ const CartContext = createContext<CartContextValue | null>(null);
  */
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // 1. Tenta carregar o carrinho da "memória" (LocalStorage) ao abrir o site
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("@90mais-cart");
+      if (saved) {
+        setCart(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Erro ao ler carrinho do storage", e);
+    } finally {
+      setIsLoaded(true); // Marca que a leitura inicial terminou
+    }
+  }, []);
+
+  // 2. Sempre que o carrinho mudar, salva na "memória" (mas só depois da leitura inicial)
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("@90mais-cart", JSON.stringify(cart));
+    }
+  }, [cart, isLoaded]);
 
   /**
    * Adiciona um novo item ao carrinho ou incrementa a quantidade se um 
