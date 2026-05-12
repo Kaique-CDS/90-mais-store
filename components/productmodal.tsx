@@ -90,6 +90,29 @@ export default function ProductModal({
   // Controle de paginação (offset) das miniaturas embaixo da foto principal
   const [thumbOffset, setThumbOffset] = useState(0); 
 
+  // ID da camisa atualmente aberta. Usado para resetar estados instantaneamente.
+  const [currentCamisaId, setCurrentCamisaId] = useState<string | null>(null);
+
+  // Derivação de estado síncrona: Quando a camisa muda, reseta os valores
+  // ANTES do navegador renderizar a tela. Isso elimina o "fantasma" da foto antiga
+  // sem precisar destruir e recriar o modal (o que causaria lentidão e piscar branco).
+  if (camisa && camisa.id !== currentCamisaId) {
+    setCurrentCamisaId(camisa.id);
+    setCurrentIndex(0);
+    setThumbOffset(0);
+    setSize("");
+    setAddedFeedback(false);
+    setWantsPersonalizacao(false);
+    setPersNome("");
+    setPersNumero("");
+    setShowSizeChart(false);
+    
+    const initial = Array.from(
+      new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
+    ).slice(0, 10);
+    setImagens(initial);
+  }
+
   // Referência para armazenar a posição inicial de um gesto de touch (Swipe no mobile)
   const touchStartX = useRef<number | null>(null);
 
@@ -117,21 +140,11 @@ export default function ProductModal({
    */
   useEffect(() => {
     if (isOpen && camisa) {
-      // 1. Reseta os estados toda vez que o Modal abrir para um novo produto
-      setCurrentIndex(0);
-      setThumbOffset(0);
-      setSize("");
-      setAddedFeedback(false);
-      setWantsPersonalizacao(false);
-      setPersNome("");
-      setPersNumero("");
-      setShowSizeChart(false);
-
-      // 2. Carrega o que já está garantido no banco instantaneamente para não deixar a UI vazia
+      // Como o reset já foi feito sincronamente lá em cima, 
+      // aqui só inicializamos a variável initial para usar no resto da função.
       const initial = Array.from(
         new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
       ).slice(0, 10);
-      setImagens(initial);
 
       // 3. Verifica se a URL da imagem termina num padrão "numero.jpg" (ex: "camisa-1.jpg")
       const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
