@@ -32,9 +32,14 @@ export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
   // não está sendo exibida, mas poderia ser usada se o layout mudasse.
   const displayCat = getDisplayCategory(camisa.categoria, camisa.nome);
 
-  // Se tiver mais de uma foto, preparamos a URL da segunda foto para o hover
-  const hasMultipleImages = (camisa.total_fotos ?? 1) > 1;
-  const secondImageUrl = hasMultipleImages ? getSequentialImageUrl(camisa.imagem_url, 2) : null;
+  // Se tiver mais de uma foto (pelo total_fotos ou pela galeria), preparamos a URL da segunda foto para o hover
+  const hasMultipleImages = (camisa.total_fotos ?? 1) > 1 || (camisa.galeria && camisa.galeria.length > 0);
+  
+  const secondImageUrl = hasMultipleImages 
+    ? (camisa.galeria && camisa.galeria.length > 0 
+        ? camisa.galeria[0] 
+        : getSequentialImageUrl(camisa.imagem_url, 2)) 
+    : null;
 
   return (
     <div

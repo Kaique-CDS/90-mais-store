@@ -43,7 +43,7 @@ export default function Home() {
         // Busca todos os produtos na tabela 'camisetas', ordenados alfabeticamente pelo nome
         const { data, error } = await supabase
           .from("camisetas")
-          .select("id, nome, preco, categoria, imagem_url, total_fotos")
+          .select("id, nome, preco, categoria, imagem_url, total_fotos, galeria")
           .order("nome", { ascending: true });
 
         if (error) throw error;
