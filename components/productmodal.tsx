@@ -16,6 +16,7 @@ import {
 import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
 import { getPriceByCategory, getFakeOriginalPrice } from "@/lib/pricing";
+import { getOptimizedImageUrl } from "@/lib/images";
 
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
@@ -286,7 +287,7 @@ export default function ProductModal({
             onMouseLeave={() => setIsZoomed(false)}
           >
             <Image
-              src={imagens[currentIndex] ?? camisa.imagem_url}
+              src={getOptimizedImageUrl(imagens[currentIndex] ?? camisa.imagem_url, 800)}
               alt={`${camisa.nome} — foto ${currentIndex + 1}`}
               priority
               fill
@@ -346,7 +347,7 @@ export default function ProductModal({
                       }`}
                     >
                       <Image
-                        src={img}
+                        src={getOptimizedImageUrl(img, 100)}
                         alt={`Miniatura ${thumbOffset + i + 1}`}
                         fill
                         sizes="60px"
@@ -637,7 +638,7 @@ export default function ProductModal({
             onMouseLeave={() => setIsZoomed(false)}
           >
             <Image
-              src={imagens[currentIndex] ?? camisa.imagem_url}
+              src={getOptimizedImageUrl(imagens[currentIndex] ?? camisa.imagem_url, 1200)}
               alt={`${camisa.nome} — foto ${currentIndex + 1} em tela cheia`}
               priority
               fill

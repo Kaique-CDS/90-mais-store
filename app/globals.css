@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@source "../components";
+
+
 
 body {
   background-color: #000;
@@ -13,6 +14,7 @@ body {
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -26,8 +28,15 @@ body {
 
 /* ── WhatsApp pulse ─────────────────────────────────── */
 @keyframes waPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
-  50%       { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(37, 211, 102, 0);
+  }
 }
 
 .wa-pulse {
@@ -36,19 +45,22 @@ body {
 
 /* ── Discount banner shimmer ────────────────────────── */
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 .discount-shimmer {
-  background: linear-gradient(
-    90deg,
-    #16a34a 0%,
-    #22c55e 40%,
-    #4ade80 50%,
-    #22c55e 60%,
-    #16a34a 100%
-  );
+  background: linear-gradient(90deg,
+      #16a34a 0%,
+      #22c55e 40%,
+      #4ade80 50%,
+      #22c55e 60%,
+      #16a34a 100%);
   background-size: 200% auto;
   animation: shimmer 2.5s linear infinite;
 }

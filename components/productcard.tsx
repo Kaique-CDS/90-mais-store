@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import type { Product } from "@/components/cartcontext";
 import { getFakeOriginalPrice } from "@/lib/pricing";
 import { getDisplayCategory } from "@/lib/categories";
+import { getSequentialImageUrl, getOptimizedImageUrl } from "@/lib/images";
 
 interface ProductCardProps {
   /** O objeto do produto contendo nome, preço, url da imagem, etc. */
@@ -21,6 +23,8 @@ interface ProductCardProps {
  * Tem efeitos de hover dinâmicos (aumento da imagem e botão centralizado).
  */
 export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   // Calcula um preço maior fictício para ancoragem visual ("De: R$ X Por: R$ Y")
   const fakePrice = getFakeOriginalPrice(camisa.preco);
   
@@ -28,24 +32,42 @@ export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
   // não está sendo exibida, mas poderia ser usada se o layout mudasse.
   const displayCat = getDisplayCategory(camisa.categoria, camisa.nome);
 
+  // Se tiver mais de uma foto, preparamos a URL da segunda foto para o hover
+  const hasMultipleImages = (camisa.total_fotos ?? 1) > 1;
+  const secondImageUrl = hasMultipleImages ? getSequentialImageUrl(camisa.imagem_url, 2) : null;
+
   return (
     <div
       className="card-animate group relative flex flex-col bg-zinc-950 border border-zinc-900 rounded-3xl overflow-hidden transition-all duration-300 hover:border-red-600/40 hover:shadow-[0_0_40px_rgba(220,38,38,0.1)]"
       // Calcula o atraso da animação css com base no índice para criar o efeito cascata
       style={{ animationDelay: `${index * 55}ms` }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Container da Imagem */}
       <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900/40">
+        {/* Imagem Principal */}
         <Image
-          src={camisa.imagem_url}
+          src={getOptimizedImageUrl(camisa.imagem_url, 400)}
           alt={camisa.nome}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
+          className={`object-cover transition-all duration-700 ${isHovered && hasMultipleImages ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}`}
         />
 
+        {/* Segunda Imagem (Aparece no Hover) */}
+        {hasMultipleImages && secondImageUrl && (
+          <Image
+            src={getOptimizedImageUrl(secondImageUrl, 400)}
+            alt={`${camisa.nome} - Vista 2`}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+            className={`object-cover transition-all duration-700 absolute inset-0 ${isHovered ? 'opacity-100 scale-110' : 'opacity-0 scale-100'}`}
+          />
+        )}
+
         {/* Overlay translúcido com botão "Ver Detalhes" que aparece apenas no hover */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-10">
           <span className="bg-red-600 text-white font-black text-[10px] px-6 py-3 rounded-full uppercase tracking-tighter shadow-[0_0_20px_rgba(220,38,38,0.5)] transform translate-y-4 group-hover:translate-y-0 transition-transform">
             Ver Detalhes
           </span>
