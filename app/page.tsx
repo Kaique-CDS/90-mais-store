@@ -81,7 +81,31 @@ export default function Home() {
               return { ...c, nome: nomeFix, preco };
             });
 
-          setCamisas(normalized);
+          // Diferencia camisas retrô com o mesmo nome (adiciona I, II, III...)
+          const retroCount: Record<string, number> = {};
+          
+          normalized.forEach((c) => {
+            const displayCat = getDisplayCategory(c.categoria, c.nome);
+            if (displayCat === 'RETRO') {
+              retroCount[c.nome] = (retroCount[c.nome] || 0) + 1;
+            }
+          });
+
+          const retroCurrentIndex: Record<string, number> = {};
+          const romanNumerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+          const finalNormalized = normalized.map((c) => {
+            const displayCat = getDisplayCategory(c.categoria, c.nome);
+            if (displayCat === 'RETRO' && retroCount[c.nome] > 1) {
+              const currentIndex = (retroCurrentIndex[c.nome] || 0) + 1;
+              retroCurrentIndex[c.nome] = currentIndex;
+              const suffix = romanNumerals[currentIndex] || currentIndex.toString();
+              return { ...c, nome: `${c.nome} ${suffix}` };
+            }
+            return c;
+          });
+
+          setCamisas(finalNormalized);
         }
       } catch (err) {
         console.error("Erro ao carregar camisas:", err);

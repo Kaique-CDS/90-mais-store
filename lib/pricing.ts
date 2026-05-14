@@ -13,6 +13,7 @@
 
 // Tabela constante de preços base (facilita alterações futuras num único lugar)
 const PRECO_PADRAO        = 149.99; // camisas de temporada (com ano/número)
+const PRECO_26_27         = 159.99; // camisas 26-27
 const PRECO_RETRO         = 199.99;
 const PRECO_JOGADOR       = 219.00;
 const PRECO_SELECAO       = 159.99;
@@ -62,6 +63,11 @@ export function getPriceByCategory(
   // Regra 2: Camisa versão JOGADOR (outros times)
   if (isJogador) return PRECO_JOGADOR;
 
+  // Regra 2.5: Camisas temporada 26-27 (não-jogador)
+  if (nomeUpper.includes('26-27') || nomeUpper.includes('26/27')) {
+    return PRECO_26_27;
+  }
+
   // Regra 3: Retrô
   if (cat === 'RETRO') return PRECO_RETRO;
 
@@ -71,8 +77,8 @@ export function getPriceByCategory(
     return isBrasil(nome) ? PRECO_BRASIL : PRECO_SELECAO;
   }
 
-  // Regra 5: Demais categorias (Brasileirão, Europeus, Resto do Mundo) assumem o preço base de temporada
-  if (['BRASILEIRÃO', 'EUROPEUS', 'RESTO DO MUNDO'].includes(cat)) {
+  // Regra 5: Demais categorias (Brasileiros, Europeus, Outros) assumem o preço base de temporada
+  if (['BRASILEIROS', 'EUROPEUS', 'OUTROS'].includes(cat)) {
     return PRECO_PADRAO;
   }
 

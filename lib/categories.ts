@@ -5,10 +5,10 @@
 
 export const CATEGORIES = [
   'TUDO',
-  'BRASILEIRÃO',
+  'BRASILEIROS',
   'EUROPEUS',
   'SELEÇÃO',
-  'RESTO DO MUNDO',
+  'OUTROS',
   'RETRO',
 ] as const
 
@@ -41,19 +41,23 @@ const BRASILEIRAO_TEAMS = [
  * 
  * Esta função é um "adaptador" que suporta os dados antigos que estão no 
  * Supabase ("NACIONAL" e "INTERNACIONAL") e os mapeia para as novas 
- * categorias definidas da UI (ex: "BRASILEIRÃO" ou "RESTO DO MUNDO").
+ * categorias definidas da UI (ex: "BRASILEIROS" ou "OUTROS").
  * 
  * @param categoria A categoria como ela vem do banco de dados (ex: 'NACIONAL')
  * @param nome O nome completo do produto (ex: 'Flamengo 2024')
- * @returns A string padronizada da categoria para exibição (ex: 'BRASILEIRÃO')
+ * @returns A string padronizada da categoria para exibição (ex: 'BRASILEIROS')
  */
 export function getDisplayCategory(categoria: string | undefined, nome: string): string {
   // Padroniza a string removendo espaços em branco e deixando em maiúsculas
   const cat = (categoria ?? '').toUpperCase().trim()
 
   // Se o banco de dados já estiver utilizando o formato das novas categorias, apenas retorna
-  const newCats = ['BRASILEIRÃO', 'EUROPEUS', 'SELEÇÃO', 'RESTO DO MUNDO', 'RETRO']
+  const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'OUTROS', 'RETRO']
   if (newCats.includes(cat)) return cat
+
+  // Transição de dados antigos
+  if (cat === 'BRASILEIRÃO') return 'BRASILEIROS'
+  if (cat === 'RESTO DO MUNDO') return 'OUTROS'
 
   // Se for categoria RETRO (já era usada anteriormente), mantemos igual
   if (cat === 'RETRO') return 'RETRO'
@@ -63,7 +67,7 @@ export function getDisplayCategory(categoria: string | undefined, nome: string):
   if (cat === 'NACIONAL') {
     const isBrasileiro = BRASILEIRAO_TEAMS.some((t) => nome.startsWith(t))
     // Se não for do Brasileirão (ex: Boca Juniors classificado errado), vai para Resto do Mundo
-    return isBrasileiro ? 'BRASILEIRÃO' : 'RESTO DO MUNDO'
+    return isBrasileiro ? 'BRASILEIROS' : 'OUTROS'
   }
 
   // Transição do dado antigo "INTERNACIONAL":
@@ -73,7 +77,7 @@ export function getDisplayCategory(categoria: string | undefined, nome: string):
   }
 
   // Fallback de segurança para quando a categoria não se encaixar em nada conhecido
-  return cat || 'OUTRO'
+  return cat || 'OUTROS'
 }
 
 /**
