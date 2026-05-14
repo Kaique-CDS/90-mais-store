@@ -110,10 +110,20 @@ export default function ProductModal({
     setShowSizeChart(false);
     setIsFullscreen(false);
     
-    const initial = Array.from(
-      new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
-    ).slice(0, 10);
-    setImagens(initial);
+    let fotos: string[] = [];
+    const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
+    const totalFotos = camisa.total_fotos ?? 1;
+
+    if (urlMatch && totalFotos > 1) {
+      const baseUrl = urlMatch[1];
+      fotos = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.jpg`);
+    } else {
+      fotos = Array.from(
+        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
+      );
+    }
+    
+    setImagens(fotos.slice(0, 10));
   }
 
   // Referência para armazenar a posição inicial de um gesto de touch (Swipe no mobile)
@@ -135,59 +145,7 @@ export default function ProductModal({
     setMousePos({ x, y });
   };
 
-  /**
-   * Effect responsável por popular a galeria de imagens.
-   * O Supabase frequentemente possui apenas 1 foto cadastrada, mas fisicamente
-   * na pasta de mídia (ou servidor de imagens externas) existem arquivos sequenciais (1.jpg, 2.jpg...).
-   * Esse effect tenta carregar imagens em background até receber um erro 404 (Not Found).
-   */
-  useEffect(() => {
-    if (isOpen && camisa) {
-      // Como o reset já foi feito sincronamente lá em cima, 
-      // aqui só inicializamos a variável initial para usar no resto da função.
-      const initial = Array.from(
-        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
-      ).slice(0, 10);
 
-      // 3. Verifica se a URL da imagem termina num padrão "numero.jpg" (ex: "camisa-1.jpg")
-      const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
-      if (!urlMatch) return;
-      const baseUrl = urlMatch[1]; // O diretório base sem o numero (ex: "https://.../camisa-")
-
-      let cancelled = false;
-
-      // Função assíncrona que escaneia proativamente imagens adjacentes (2.jpg, 3.jpg...) em paralelo!
-      const scan = async () => {
-        const promises = [];
-        for (let i = 1; i <= 10; i++) {
-          const url = `${baseUrl}${i}.jpg`;
-          promises.push(
-            fetch(url, { method: "HEAD" })
-              .then((res) => (res.ok ? url : null))
-              .catch(() => null)
-          );
-        }
-        
-        const results = await Promise.all(promises);
-        if (cancelled) return;
-        
-        // Filtra os nulls e extrai as URLs válidas mantendo a ordem
-        const found = results.filter(Boolean) as string[];
-        
-        // Mescla as imagens do banco com as descobertas pelo scan sem duplicatas
-        const combined = Array.from(new Set([...initial, ...found])).slice(0, 10);
-        
-        // Se a mescla encontrou mais imagens do que tínhamos inicialmente, atualiza
-        if (combined.length > initial.length) {
-          setImagens(combined);
-        }
-      };
-      scan();
-
-      // Cleanup do useEffect previne que um escaneamento antigo altere imagens de um novo produto clicado rapidamente
-      return () => { cancelled = true; };
-    }
-  }, [isOpen, camisa]);
 
   /** 
    * Sincroniza a barra de miniaturas para que ela role automaticamente caso 

@@ -12,6 +12,7 @@ export interface Product {
   imagem_url: string;
   categoria?: string;
   galeria?: string[];
+  total_fotos?: number;
 }
 
 /** Estrutura da personalização escolhida pelo cliente */
