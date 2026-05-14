@@ -17,6 +17,7 @@ import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
 import { getPriceByCategory, getFakeOriginalPrice } from "@/lib/pricing";
 import { getOptimizedImageUrl } from "@/lib/images";
+import { supabase } from "@/lib/supabaseClient";
 
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
@@ -111,21 +112,74 @@ export default function ProductModal({
     setShowSizeChart(false);
     setIsFullscreen(false);
     
-    let fotos: string[] = [];
-    const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
-    const totalFotos = camisa.total_fotos ?? 1;
-
-    if (urlMatch && totalFotos > 1) {
-      const baseUrl = urlMatch[1];
-      fotos = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.jpg`);
-    } else {
-      fotos = Array.from(
-        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
-      );
-    }
-    
+    // Inicialmente usamos apenas a imagem principal e a galeria se disponível
+    let fotos: string[] = Array.from(
+      new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
+    );
     setImagens(fotos.slice(0, 10));
   }
+
+  /**
+   * Busca dinâmica de fotos no Storage do Supabase.
+   * Em vez de confiar apenas no banco de dados, listamos a pasta real do produto.
+   */
+  useEffect(() => {
+    async function fetchAllPhotos() {
+      if (!camisa?.imagem_url) return;
+
+      try {
+        // Tenta extrair o caminho relativo da pasta no Storage
+        // Ex: .../public/camisas/Europeu/Ajax/25-26/I/1.jpg -> Europeu/Ajax/25-26/I
+        const urlParts = camisa.imagem_url.split('/public/camisas/');
+        if (urlParts.length < 2) return;
+
+        const fullPath = urlParts[1];
+        const pathParts = fullPath.split('/');
+        pathParts.pop(); // Remove o nome do arquivo (ex: 1.jpg)
+        const folderPath = pathParts.join('/');
+        const baseUrl = camisa.imagem_url.substring(0, camisa.imagem_url.lastIndexOf('/') + 1);
+
+        // Lista todos os arquivos na pasta do Storage
+        const { data: files, error } = await supabase.storage
+          .from('camisas')
+          .list(folderPath, {
+            sortBy: { column: 'name', order: 'asc' }
+          });
+
+        if (error) throw error;
+
+        if (files && files.length > 0) {
+          // Constrói as URLs completas para todos os arquivos de imagem encontrados
+          const detectedPhotos = files
+            .filter(f => f.name.match(/\.(jpg|jpeg|png|webp)$/i))
+            .map(f => `${baseUrl}${f.name}`);
+
+          // Remove duplicatas e garante que a imagem_url original seja a primeira
+          const finalPhotos = Array.from(
+            new Set([camisa.imagem_url, ...detectedPhotos, ...(camisa.galeria ?? [])])
+          ).filter(Boolean);
+
+          setImagens(finalPhotos.slice(0, 15)); // Aumentamos o limite para 15 fotos
+        }
+      } catch (err) {
+        console.error("Erro ao listar fotos do Storage:", err);
+        
+        // Fallback para a lógica sequencial se a listagem falhar
+        const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
+        const totalFotos = camisa.total_fotos ?? 1;
+
+        if (urlMatch && totalFotos > 1) {
+          const baseUrl = urlMatch[1];
+          const fotosSeq = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.jpg`);
+          setImagens(Array.from(new Set([camisa.imagem_url, ...fotosSeq])).slice(0, 10));
+        }
+      }
+    }
+
+    if (isOpen) {
+      fetchAllPhotos();
+    }
+  }, [camisa?.id, isOpen]);
 
   // Referência para armazenar a posição inicial de um gesto de touch (Swipe no mobile)
   const touchStartX = useRef<number | null>(null);
