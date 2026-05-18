@@ -120,59 +120,55 @@ export default function ProductModal({
   }
 
   /**
-   * Busca dinâmica de fotos no Storage do Supabase.
-   * Em vez de confiar apenas no banco de dados, listamos a pasta real do produto.
+   * Busca dinâmica de fotos tentando carregar imagens sequenciais (1.jpg, 2.jpg...).
+   * Não depende de permissões de listagem do Storage — funciona em todos os dispositivos.
    */
   useEffect(() => {
     async function fetchAllPhotos() {
       if (!camisa?.imagem_url) return;
 
-      try {
-        // Tenta extrair o caminho relativo da pasta no Storage
-        // Ex: .../public/camisas/Europeu/Ajax/25-26/I/1.jpg -> Europeu/Ajax/25-26/I
-        const urlParts = camisa.imagem_url.split('/public/camisas/');
-        if (urlParts.length < 2) return;
+      // Fotos já conhecidas: imagem principal + galeria do banco
+      const knownPhotos = Array.from(
+        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean))
+      );
 
-        const fullPath = urlParts[1];
-        const pathParts = fullPath.split('/');
-        pathParts.pop(); // Remove o nome do arquivo (ex: 1.jpg)
-        const folderPath = pathParts.join('/');
-        const baseUrl = camisa.imagem_url.substring(0, camisa.imagem_url.lastIndexOf('/') + 1);
+      // Tenta extrair base da URL para gerar sequências (ex: .../1.jpg -> .../N.jpg)
+      const urlMatch = camisa.imagem_url.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp)$/i);
 
-        // Lista todos os arquivos na pasta do Storage
-        const { data: files, error } = await supabase.storage
-          .from('camisas')
-          .list(folderPath, {
-            sortBy: { column: 'name', order: 'asc' }
-          });
+      // Se total_fotos está no banco, usa diretamente (mais rápido)
+      const totalFotos = camisa.total_fotos;
+      if (urlMatch && totalFotos && totalFotos > 1) {
+        const baseUrl = urlMatch[1];
+        const ext = urlMatch[3];
+        const seqPhotos = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.${ext}`);
+        const finalPhotos = Array.from(new Set([...knownPhotos, ...seqPhotos])).filter(Boolean);
+        setImagens(finalPhotos.slice(0, 15));
+        return;
+      }
 
-        if (error) throw error;
+      // Fallback: tenta probing HEAD para descobrir quantas fotos existem (sequencial)
+      if (urlMatch && knownPhotos.length <= 1) {
+        const baseUrl = urlMatch[1];
+        const ext = urlMatch[3];
+        const found: string[] = [camisa.imagem_url];
 
-        if (files && files.length > 0) {
-          // Constrói as URLs completas para todos os arquivos de imagem encontrados
-          const detectedPhotos = files
-            .filter(f => f.name.match(/\.(jpg|jpeg|png|webp)$/i))
-            .map(f => `${baseUrl}${f.name}`);
-
-          // Remove duplicatas e garante que a imagem_url original seja a primeira
-          const finalPhotos = Array.from(
-            new Set([camisa.imagem_url, ...detectedPhotos, ...(camisa.galeria ?? [])])
-          ).filter(Boolean);
-
-          setImagens(finalPhotos.slice(0, 15)); // Aumentamos o limite para 15 fotos
+        for (let i = 2; i <= 10; i++) {
+          try {
+            const probeUrl = `${baseUrl}${i}.${ext}`;
+            const res = await fetch(probeUrl, { method: 'HEAD' });
+            if (res.ok) {
+              found.push(probeUrl);
+            } else {
+              break; // Para na primeira 404
+            }
+          } catch {
+            break;
+          }
         }
-      } catch (err) {
-        console.error("Erro ao listar fotos do Storage:", err);
-        
-        // Fallback para a lógica sequencial se a listagem falhar
-        const urlMatch = camisa.imagem_url?.match(/^(.*\/)(\d+)\.jpg$/i);
-        const totalFotos = camisa.total_fotos ?? 1;
 
-        if (urlMatch && totalFotos > 1) {
-          const baseUrl = urlMatch[1];
-          const fotosSeq = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.jpg`);
-          setImagens(Array.from(new Set([camisa.imagem_url, ...fotosSeq])).slice(0, 10));
-        }
+        setImagens(found);
+      } else if (knownPhotos.length > 1) {
+        setImagens(knownPhotos.slice(0, 15));
       }
     }
 
