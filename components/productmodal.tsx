@@ -402,9 +402,10 @@ export default function ProductModal({
                       }`}
                     >
                       <Image
-                        src={getOptimizedImageUrl(img, 100)}
+                        src={img}
                         alt={`Miniatura ${thumbOffset + i + 1}`}
                         fill
+                        unoptimized
                         sizes="60px"
                         className="object-cover"
                       />
