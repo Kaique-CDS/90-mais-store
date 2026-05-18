@@ -341,10 +341,11 @@ export default function ProductModal({
             onMouseLeave={() => setIsZoomed(false)}
           >
             <Image
-              src={getOptimizedImageUrl(imagens[currentIndex] ?? camisa.imagem_url, 800)}
+              src={imagens[currentIndex] ?? camisa.imagem_url}
               alt={`${camisa.nome} — foto ${currentIndex + 1}`}
               priority
               fill
+              unoptimized
               sizes="(max-width: 768px) 100vw, 50vw"
               className={`object-contain transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : "drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)]"}`}
               style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
@@ -692,10 +693,11 @@ export default function ProductModal({
             onMouseLeave={() => setIsZoomed(false)}
           >
             <Image
-              src={getOptimizedImageUrl(imagens[currentIndex] ?? camisa.imagem_url, 1200)}
+              src={imagens[currentIndex] ?? camisa.imagem_url}
               alt={`${camisa.nome} — foto ${currentIndex + 1} em tela cheia`}
               priority
               fill
+              unoptimized
               sizes="100vw"
               className={`object-contain transition-transform duration-200 ${isZoomed ? "scale-[2.5]" : ""}`}
               style={isZoomed ? { transformOrigin: `${mousePos.x}% ${mousePos.y}%` } : undefined}
