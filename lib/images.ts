@@ -19,23 +19,10 @@ export function getSequentialImageUrl(url: string, index: number): string {
   return `${baseUrl}${index}.jpg`;
 }
 
-/**
- * Adiciona parâmetros de transformação do Supabase para otimizar o carregamento.
- * Nota: Requer que a funcionalidade de Image Transformation esteja ativa no projeto Supabase.
- * Se não estiver ativa, os parâmetros serão ignorados pelo Supabase e a imagem original será entregue.
- */
 export function getOptimizedImageUrl(url: string, width?: number, quality: number = 80): string {
-  if (!url || !url.includes('supabase.co')) return url;
-
-  // Se a URL já tiver parâmetros, não adicionamos mais para evitar conflitos
-  if (url.includes('?')) return url;
-
-  const params = new URLSearchParams();
-  if (width) params.append('width', width.toString());
-  params.append('quality', quality.toString());
-  
-  // Algumas configurações do Supabase usam o endpoint /render/image para transformações
-  // Mas para simplicidade e compatibilidade com o que o usuário já tem no next.config.js,
-  // vamos apenas anexar os parâmetros à URL pública.
-  return `${url}?${params.toString()}`;
+  // O componente <Image> do Next.js já faz a otimização automaticamente.
+  // Adicionar parâmetros de query nativos do Supabase para o endpoint /object/public/ 
+  // muitas vezes resulta em erro 400 (Bad Request) se a transformação de imagens
+  // não estiver habilitada ou se a URL for processada pelo /_next/image.
+  return url;
 }
