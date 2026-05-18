@@ -17,7 +17,6 @@ import type { Product, Personalizacao } from "@/components/cartcontext";
 import { getDisplayCategory } from "@/lib/categories";
 import { getPriceByCategory, getFakeOriginalPrice } from "@/lib/pricing";
 import { getOptimizedImageUrl } from "@/lib/images";
-import { supabase } from "@/lib/supabaseClient";
 
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
@@ -120,8 +119,8 @@ export default function ProductModal({
   }
 
   /**
-   * Busca dinâmica de fotos tentando carregar imagens sequenciais (1.jpg, 2.jpg...).
-   * Não depende de permissões de listagem do Storage — funciona em todos os dispositivos.
+   * Busca dinâmica de fotos via API Route server-side (/api/images).
+   * Funciona em todos os dispositivos sem problemas de CORS.
    */
   useEffect(() => {
     async function fetchAllPhotos() {
@@ -132,10 +131,8 @@ export default function ProductModal({
         new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean))
       );
 
-      // Tenta extrair base da URL para gerar sequências (ex: .../1.jpg -> .../N.jpg)
+      // Se total_fotos está no banco, usa para gerar URLs sequenciais (mais rápido)
       const urlMatch = camisa.imagem_url.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp)$/i);
-
-      // Se total_fotos está no banco, usa diretamente (mais rápido)
       const totalFotos = camisa.total_fotos;
       if (urlMatch && totalFotos && totalFotos > 1) {
         const baseUrl = urlMatch[1];
@@ -146,30 +143,24 @@ export default function ProductModal({
         return;
       }
 
-      // Fallback: tenta probing HEAD para descobrir quantas fotos existem (sequencial)
-      if (urlMatch && knownPhotos.length <= 1) {
-        const baseUrl = urlMatch[1];
-        const ext = urlMatch[3];
-        const found: string[] = [camisa.imagem_url];
-
-        for (let i = 2; i <= 10; i++) {
-          try {
-            const probeUrl = `${baseUrl}${i}.${ext}`;
-            const res = await fetch(probeUrl, { method: 'HEAD' });
-            if (res.ok) {
-              found.push(probeUrl);
-            } else {
-              break; // Para na primeira 404
-            }
-          } catch {
-            break;
+      // Chama a API Route server-side para listar as fotos sem CORS
+      try {
+        const res = await fetch(`/api/images?url=${encodeURIComponent(camisa.imagem_url)}`);
+        if (res.ok) {
+          const data: { urls: string[] } = await res.json();
+          if (data.urls && data.urls.length > 0) {
+            // Mescla com galeria do banco (se houver)
+            const finalPhotos = Array.from(new Set([...data.urls, ...knownPhotos])).filter(Boolean);
+            setImagens(finalPhotos.slice(0, 15));
+            return;
           }
         }
-
-        setImagens(found);
-      } else if (knownPhotos.length > 1) {
-        setImagens(knownPhotos.slice(0, 15));
+      } catch {
+        // Silencioso — fallback abaixo
       }
+
+      // Fallback final: mostra só as fotos já conhecidas
+      setImagens(knownPhotos);
     }
 
     if (isOpen) {
