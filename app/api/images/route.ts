@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
+export const revalidate = 86400; // Cache de 24h na Vercel (reduz custo do Supabase)
+
 /**
  * API Route: GET /api/images?url=<supabase_image_url>
  *
@@ -44,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     const imageFiles = files
       .filter((f) => f.name.match(/\.(jpg|jpeg|png|webp)$/i))
-      .map((f) => `${baseUrl}${f.name}`);
+      .map((f) => `${baseUrl}${encodeURIComponent(f.name)}`);
 
     const urls = Array.from(new Set([imageUrl, ...imageFiles])).filter(Boolean);
 
