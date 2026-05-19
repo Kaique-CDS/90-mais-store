@@ -131,26 +131,14 @@ export default function ProductModal({
         new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean))
       );
 
-      // Se total_fotos está no banco, usa para gerar URLs sequenciais (mais rápido)
-      const urlMatch = camisa.imagem_url.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp)$/i);
-      const totalFotos = camisa.total_fotos;
-      if (urlMatch && totalFotos && totalFotos > 1) {
-        const baseUrl = urlMatch[1];
-        const ext = urlMatch[3];
-        const seqPhotos = Array.from({ length: totalFotos }, (_, i) => `${baseUrl}${i + 1}.${ext}`);
-        const finalPhotos = Array.from(new Set([...knownPhotos, ...seqPhotos])).filter(Boolean);
-        setImagens(finalPhotos.slice(0, 15));
-        return;
-      }
-
-      // Chama a API Route server-side para listar as fotos sem CORS
+      // Chama a API Route server-side para listar as fotos reais que existem no banco
       try {
         const res = await fetch(`/api/images?url=${encodeURIComponent(camisa.imagem_url)}`);
         if (res.ok) {
           const data: { urls: string[] } = await res.json();
           if (data.urls && data.urls.length > 0) {
-            // Mescla com galeria do banco (se houver)
-            const finalPhotos = Array.from(new Set([...data.urls, ...knownPhotos])).filter(Boolean);
+            // Garante que a imagem principal esteja na primeira posição
+            const finalPhotos = Array.from(new Set([camisa.imagem_url, ...data.urls, ...knownPhotos])).filter(Boolean);
             setImagens(finalPhotos.slice(0, 15));
             return;
           }

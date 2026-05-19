@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     const fullPath = urlParts[1];
     const pathParts = fullPath.split('/');
     pathParts.pop(); // Remove o nome do arquivo (ex: 1.jpg)
-    const folderPath = pathParts.join('/');
+    // Decode the path because Supabase storage list needs the raw name with spaces, not %20
+    const folderPath = decodeURIComponent(pathParts.join('/'));
     const baseUrl = imageUrl.substring(0, imageUrl.lastIndexOf('/') + 1);
 
     // Listagem server-side — sem CORS, sem restrição de browser
