@@ -4,11 +4,13 @@
  *
  * Regras atuais:
  * - Camisas padrão de temporada (ex: "AJAX 25-26 I") → R$ 149,99
- * - Camisas Retrô → R$ 199,99
+ * - Camisas Retrô (qualquer categoria com RETRO/RETRÔ no nome) → R$ 199,99
  * - Camisas versão JOGADOR (qualquer clube/seleção, exceto Brasil) → R$ 219,00
+ * - Camisas de Seleção Copa 2026 → R$ 169,99
  * - Camisas de Seleção Nacional → R$ 159,99
  * - Exceção Seleção Brasileira (Torcedor) → R$ 169,99
  * - Exceção Seleção Brasileira (Jogador) → R$ 229,99
+ * - Camisas de Treino → R$ 149,99 (mesmo preço padrão)
  */
 
 // Tabela constante de preços base (facilita alterações futuras num único lugar)
@@ -56,6 +58,7 @@ export function getPriceByCategory(
   const cat = displayCategory.toUpperCase().trim();
   const nomeUpper = nome.toUpperCase();
   const isJogador = nomeUpper.includes('JOGADOR');
+  const isRetro = nomeUpper.includes('RETRO') || nomeUpper.includes('RETRÔ');
 
   // Regra 1: Camisa versão JOGADOR da Seleção Brasileira (Maior prioridade)
   if (isJogador && isBrasil(nome)) return PRECO_JOGADOR_BRASIL;
@@ -63,15 +66,15 @@ export function getPriceByCategory(
   // Regra 2: Camisa versão JOGADOR (outros times)
   if (isJogador) return PRECO_JOGADOR;
 
-  // Regra 2.5: Camisas temporada 26-27 (não-jogador)
+  // Regra 3: Retrô — detectado PELO NOME (cobre todas as categorias: Brasileiros, Europeus, Seleção, RETRO)
+  if (isRetro) return PRECO_RETRO;
+
+  // Regra 4: Camisas temporada 26-27 (não-jogador, não-retro)
   if (nomeUpper.includes('26-27') || nomeUpper.includes('26/27')) {
     return PRECO_26_27;
   }
 
-  // Regra 3: Retrô
-  if (cat === 'RETRO') return PRECO_RETRO;
-
-  // Regra 4: Seleções (Copa do mundo, seleções nacionais, etc)
+  // Regra 5: Seleções (Copa do mundo, seleções nacionais, etc)
   if (cat === 'SELEÇÃO') {
     // Retorna o preço diferenciado se for do Brasil, Copa 2026, ou o padrão
     if (isBrasil(nome)) return PRECO_BRASIL;
@@ -79,8 +82,8 @@ export function getPriceByCategory(
     return PRECO_SELECAO;
   }
 
-  // Regra 5: Demais categorias (Brasileiros, Europeus, Outros) assumem o preço base de temporada
-  if (['BRASILEIROS', 'EUROPEUS', 'OUTROS'].includes(cat)) {
+  // Regra 6: Demais categorias (Brasileiros, Europeus, Outros, Treino) assumem o preço base
+  if (['BRASILEIROS', 'EUROPEUS', 'OUTROS', 'TREINO'].includes(cat)) {
     return PRECO_PADRAO;
   }
 

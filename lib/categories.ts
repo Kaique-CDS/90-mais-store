@@ -10,6 +10,7 @@ export const CATEGORIES = [
   'SELEÇÃO',
   'OUTROS',
   'RETRO',
+  'TREINO',
 ] as const
 
 // Tipagem baseada no array de categorias constantes para garantir type safety
@@ -52,7 +53,7 @@ export function getDisplayCategory(categoria: string | undefined, nome: string):
   const cat = (categoria ?? '').toUpperCase().trim()
 
   // Se o banco de dados já estiver utilizando o formato das novas categorias, apenas retorna
-  const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'OUTROS', 'RETRO']
+  const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'OUTROS', 'RETRO', 'TREINO']
   if (newCats.includes(cat)) return cat
 
   // Transição de dados antigos
