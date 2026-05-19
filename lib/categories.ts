@@ -35,6 +35,36 @@ const BRASILEIRAO_TEAMS = [
   'Santos',
   'Sao Paulo',
   'Vasco',
+  'Athletico',
+  'Athletico Pr',
+  'Bragantino',
+  'Fortaleza',
+  'Ceara',
+  'Vitoria',
+  'Sport',
+  'Coritiba',
+  'Goias',
+  'Atletico Go',
+  'Cuiaba',
+  'Juventude',
+  'Criciuma',
+  'Paysandu',
+  'Remo',
+  'Ponte Preta',
+  'Guarani'
+]
+
+const SELECOES_TEAMS = [
+  'Brasil', 'Argentina', 'Alemanha', 'Espanha', 'França', 'Franca', 'Inglaterra', 
+  'Italia', 'Portugal', 'Holanda', 'Uruguai', 'Colombia', 'Chile', 'Mexico', 'Eua', 'Estados Unidos',
+  'Japao', 'Croacia', 'Belgica', 'Marrocos', 'Senegal', 'Camaroes', 'Nigeria'
+]
+
+const EUROPEUS_TEAMS = [
+  'Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Milan', 'Inter', 'Juventus',
+  'Napoli', 'Roma', 'Lazio', 'Arsenal', 'Chelsea', 'Liverpool', 'Manchester', 'Tottenham', 'Aston Villa', 'Newcastle',
+  'Bayern', 'Borussia', 'Bayer Leverkusen', 'Rb Leipzig', 'Psg', 'Paris', 'Lyon', 'Marseille', 'Monaco', 'Ajax', 'Psv', 'Feyenoord', 'Benfica',
+  'Porto', 'Sporting'
 ]
 
 /**
@@ -43,61 +73,101 @@ const BRASILEIRAO_TEAMS = [
  * Esta função é um "adaptador" que suporta os dados antigos que estão no 
  * Supabase ("NACIONAL" e "INTERNACIONAL") e os mapeia para as novas 
  * categorias definidas da UI (ex: "BRASILEIROS" ou "OUTROS").
+ * Além disso, adivinha a categoria a partir do nome se estiver sem tag,
+ * ou analisa o caminho (pasta) da imagem no Supabase Storage.
  * 
  * @param categoria A categoria como ela vem do banco de dados (ex: 'NACIONAL')
  * @param nome O nome completo do produto (ex: 'Flamengo 2024')
+ * @param imagemUrl A URL ou caminho da imagem (ex: '.../Brasileirao/Santos/...')
  * @returns A string padronizada da categoria para exibição (ex: 'BRASILEIROS')
  */
-export function getDisplayCategory(categoria: string | undefined, nome: string): string {
-  // Padroniza a string removendo espaços em branco e deixando em maiúsculas
+export function getDisplayCategory(
+  categoria: string | undefined,
+  nome: string,
+  imagemUrl?: string,
+): string {
   const cat = (categoria ?? '').toUpperCase().trim()
+  const nomeUpper = nome.toUpperCase()
 
-  // Se o banco de dados já estiver utilizando o formato das novas categorias, apenas retorna
+  // 1. Força RETRO se tiver no nome
+  if (nomeUpper.includes('RETRÔ') || nomeUpper.includes('RETRO')) {
+    return 'RETRO'
+  }
+
+  // 2. Força TREINO se tiver no nome
+  if (nomeUpper.includes('TREINO')) {
+    return 'TREINO'
+  }
+
+  // 3. Analisa o caminho/pasta da imagem (Supabase Storage) se disponível
+  if (imagemUrl) {
+    const decodedUrl = decodeURIComponent(imagemUrl).toLowerCase()
+    if (decodedUrl.includes('/brasileirao/')) {
+      return 'BRASILEIROS'
+    }
+    if (decodedUrl.includes('/europeu/')) {
+      return 'EUROPEUS'
+    }
+    if (decodedUrl.includes('/selecao/')) {
+      return 'SELEÇÃO'
+    }
+    if (decodedUrl.includes('/outros lugares do mundo/')) {
+      return 'OUTROS'
+    }
+  }
+
+  // 4. Se o banco de dados já estiver utilizando o formato das novas categorias, apenas retorna
   const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'OUTROS', 'RETRO', 'TREINO']
   if (newCats.includes(cat)) return cat
 
-  // Transição de dados antigos
+  // 5. Transição de dados antigos EXPLICITOS
   if (cat === 'BRASILEIRÃO') return 'BRASILEIROS'
   if (cat === 'RESTO DO MUNDO') return 'OUTROS'
 
-  // Se for categoria RETRO (já era usada anteriormente), mantemos igual
-  if (cat === 'RETRO') return 'RETRO'
-
-  // Transição do dado antigo "NACIONAL":
-  // Verificamos se o início do nome da camisa bate com algum dos times do BRASILEIRAO_TEAMS
+  // 6. Transição do dado antigo "NACIONAL":
+  // O banco antigo tinha erros (ex: Boca Juniors como Nacional). 
+  // Então só vira BRASILEIROS se o nome bater com um time BR, senão é OUTROS.
   if (cat === 'NACIONAL') {
-    const isBrasileiro = BRASILEIRAO_TEAMS.some((t) => nome.startsWith(t))
-    // Se não for do Brasileirão (ex: Boca Juniors classificado errado), vai para Resto do Mundo
+    // Adiciona espaço após o time para evitar que "Sport" dê match em "Sporting"
+    const isBrasileiro = BRASILEIRAO_TEAMS.some((t) => {
+       const tUpper = t.toUpperCase();
+       return nomeUpper.startsWith(tUpper + ' ') || nomeUpper === tUpper;
+    })
     return isBrasileiro ? 'BRASILEIROS' : 'OUTROS'
   }
 
-  // Transição do dado antigo "INTERNACIONAL":
-  // Se contiver a palavra "COPA" no nome, tratamos como seleção. Senão, assumimos que é clube europeu.
+  // 7. Transição do dado antigo "INTERNACIONAL":
   if (cat === 'INTERNACIONAL') {
-    return nome.toUpperCase().includes('COPA') ? 'SELEÇÃO' : 'EUROPEUS'
+    const isSelecao = nomeUpper.includes('COPA') || SELECOES_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
+    return isSelecao ? 'SELEÇÃO' : 'EUROPEUS'
   }
 
-  // Fallback de segurança para quando a categoria não se encaixar em nada conhecido
-  return cat || 'OUTROS'
+  // 8. Adivinhação para produtos COMPLETAMENTE SEM CATEGORIA no banco de dados
+  if (!cat) {
+    const isBrasileiro = BRASILEIRAO_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
+    if (isBrasileiro) return 'BRASILEIROS'
+
+    const isSelecao = SELECOES_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
+    if (isSelecao) return 'SELEÇÃO'
+
+    const isEuropeu = EUROPEUS_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
+    if (isEuropeu) return 'EUROPEUS'
+  }
+
+  // Fallback de segurança
+  return 'OUTROS'
 }
 
 /**
  * Função utilitária utilizada nos filtros do catálogo (Header e App/Page).
  * Verifica se uma determinada camisa pertence à categoria que o usuário clicou.
- * 
- * @param categoria A categoria do produto no banco de dados.
- * @param nome O nome do produto.
- * @param activeCategory A categoria que o usuário selecionou no Header (ex: "SELEÇÃO" ou "TUDO").
- * @returns Verdadeiro (true) se a camisa deve aparecer na tela, Falso (false) se deve ser escondida.
  */
 export function matchesCategory(
   categoria: string | undefined,
   nome: string,
   activeCategory: string,
+  imagemUrl?: string,
 ): boolean {
-  // Se o usuário selecionou "TUDO", mostra independentemente da categoria
   if (activeCategory === 'TUDO') return true
-  
-  // Compara a categoria normalizada do produto com a categoria ativa
-  return getDisplayCategory(categoria, nome) === activeCategory
+  return getDisplayCategory(categoria, nome, imagemUrl) === activeCategory
 }

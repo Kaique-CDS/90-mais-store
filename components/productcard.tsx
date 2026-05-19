@@ -27,7 +27,7 @@ export default function ProductCard({ camisa, index = 0 }: ProductCardProps) {
   
   // Como não mostramos a categoria no card atualmente, essa variável
   // não está sendo exibida, mas poderia ser usada se o layout mudasse.
-  const displayCat = getDisplayCategory(camisa.categoria, camisa.nome);
+  const displayCat = getDisplayCategory(camisa.categoria, camisa.nome, camisa.imagem_url);
 
   return (
     <div

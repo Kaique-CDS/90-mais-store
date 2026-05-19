@@ -108,7 +108,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     <>
       {/* Backdrop (fundo escuro esfumaçado) */}
       <div
-        className={`fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm transition-opacity duration-300 touch-none ${
           isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={onClose}
@@ -147,7 +147,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
         </div>
 
         {/* Lista de itens (Scrollável) */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-4 space-y-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 py-3 sm:py-4 space-y-3">
           {/* Banner de aviso promocional dinâmico (só aparece se o desconto for ativado) */}
           {desconto > 0 && (
             <div className="discount-shimmer rounded-2xl px-4 py-3 flex items-center justify-between mb-2">

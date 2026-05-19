@@ -27,9 +27,9 @@ export default function ScrollToTop() {
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Voltar ao topo"
-      className="fixed bottom-8 left-6 z-[100] bg-zinc-900/90 border border-zinc-700 p-3 rounded-2xl shadow-xl hover:bg-red-600 hover:border-red-600 transition-all hover:scale-110 backdrop-blur-sm"
+      className="fixed bottom-24 right-6 z-[100] bg-zinc-800/90 border border-zinc-600 p-3.5 rounded-full shadow-lg hover:bg-zinc-700 hover:border-zinc-500 transition-all hover:-translate-y-1 backdrop-blur-sm group"
     >
-      <ChevronUp className="text-white" size={22} />
+      <ChevronUp className="text-white group-hover:text-red-500 transition-colors" size={24} />
     </button>
   );
 }

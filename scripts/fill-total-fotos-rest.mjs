@@ -25,28 +25,29 @@ async function run() {
       continue;
     }
 
-    const urlMatch = camisa.imagem_url.match(/^(.*\/)1\.(jpg|jpeg|png|webp)$/i);
+    const urlMatch = camisa.imagem_url.match(/^(.*\/)\d+\.(jpg|jpeg|png|webp)$/i);
     if (!urlMatch) {
       continue;
     }
 
     const baseUrl = urlMatch[1];
     const ext = urlMatch[2];
-    let maxFotos = 1;
+    let countFotos = 0;
 
-    for (let i = 2; i <= 15; i++) {
+    // Varre de 1 a 15 para contar quantas fotos realmente existem no storage
+    for (let i = 1; i <= 15; i++) {
       const testUrl = `${baseUrl}${i}.${ext}`;
       try {
         const check = await fetch(testUrl, { method: "HEAD" });
         if (check.ok) {
-          maxFotos = i;
-        } else {
-          break; 
+          countFotos++;
         }
       } catch (err) {
-        break; 
+        // Ignora erros de rede temporários
       }
     }
+
+    const maxFotos = countFotos || 1;
 
     if (maxFotos > 1 || (camisa.total_fotos === null)) {
       const updateUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/camisetas?id=eq.${camisa.id}`;

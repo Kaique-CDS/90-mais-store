@@ -27,9 +27,8 @@ export default function Home() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Controle de paginação (Infinite Scroll)
+  // Controle de paginação
   const [visibleCount, setVisibleCount] = useState(12);
-  const observerTarget = useRef<HTMLDivElement>(null);
 
   const { addToCart } = useCart();
 
@@ -75,7 +74,7 @@ export default function Home() {
               // Corrige a grafia do banco de dados (Franca -> França)
               const nomeFix = c.nome.replace(/\bFranca\b/g, "França");
               // Descobre a categoria real
-              const displayCat = getDisplayCategory(c.categoria, nomeFix);
+              const displayCat = getDisplayCategory(c.categoria, nomeFix, c.imagem_url);
               // Calcula o preço correto com base nas nossas regras de negócio (ignorando o preço do DB se houver regra superior)
               const preco = getPriceByCategory(displayCat, nomeFix, c.preco);
               return { ...c, nome: nomeFix, preco };
@@ -85,7 +84,7 @@ export default function Home() {
           const retroCount: Record<string, number> = {};
           
           normalized.forEach((c) => {
-            const displayCat = getDisplayCategory(c.categoria, c.nome);
+            const displayCat = getDisplayCategory(c.categoria, c.nome, c.imagem_url);
             if (displayCat === 'RETRO') {
               retroCount[c.nome] = (retroCount[c.nome] || 0) + 1;
             }
@@ -95,7 +94,7 @@ export default function Home() {
           const romanNumerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
           const finalNormalized = normalized.map((c) => {
-            const displayCat = getDisplayCategory(c.categoria, c.nome);
+            const displayCat = getDisplayCategory(c.categoria, c.nome, c.imagem_url);
             if (displayCat === 'RETRO' && retroCount[c.nome] > 1) {
               const currentIndex = (retroCurrentIndex[c.nome] || 0) + 1;
               retroCurrentIndex[c.nome] = currentIndex;
@@ -135,7 +134,7 @@ export default function Home() {
       c.categoria?.toLowerCase().includes(searchTerm.toLowerCase());
 
     // Verifica se a camisa pertence à categoria clicada no header
-    const matchCat = matchesCategory(c.categoria, c.nome, activeCategory);
+    const matchCat = matchesCategory(c.categoria, c.nome, activeCategory, c.imagem_url);
 
     // Só exibe se passar em AMBOS os filtros
     return matchSearch && matchCat;
@@ -144,29 +143,7 @@ export default function Home() {
   // Fatia o array total para exibir apenas a quantidade controlada pelo visibleCount
   const camisasVisiveis = camisasFiltradas.slice(0, visibleCount);
 
-  /**
-   * Intersection Observer para o Scroll Infinito.
-   * Quando o elemento alvo (`observerTarget`) entrar na tela, aumentamos o `visibleCount`.
-   */
-  useEffect(() => {
-    // Não inicializa o observer se a lista inteira já estiver na tela ou se estiver carregando a API
-    if (loading || visibleCount >= camisasFiltradas.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 12);
-        }
-      },
-      { rootMargin: "200px" } // Dispara 200px antes de chegar no final para uma transição suave
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [loading, visibleCount, camisasFiltradas.length]);
+  // Sem IntersectionObserver, o usuário controla quando carregar mais via botão.
 
   /**
    * Função ponte entre o Modal do Produto e o Contexto do Carrinho.
@@ -187,7 +164,12 @@ export default function Home() {
     <main className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white">
       {/* ── CABEÇALHO ── */}
       <HeaderAcervo
-        onSearch={setSearchTerm}
+        onSearch={(term) => {
+          setSearchTerm(term);
+          if (term.trim() !== "") {
+            setActiveCategory("TUDO");
+          }
+        }}
         onOpenCart={() => setIsCartOpen(true)}
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
@@ -214,10 +196,18 @@ export default function Home() {
               onSelectCamisa={setSelectedCamisa}
             />
 
-            {/* Elemento alvo invisível para disparar o scroll infinito */}
+            {/* Botão de Ver Mais (substitui o scroll infinito para melhor performance) */}
             {visibleCount < camisasFiltradas.length && (
-              <div ref={observerTarget} className="w-full h-20 flex items-center justify-center mt-8">
-                <div className="w-8 h-8 border-4 border-zinc-800 border-t-red-600 rounded-full animate-spin" />
+              <div className="w-full flex items-center justify-center mt-12 mb-8">
+                <button
+                  onClick={() => setVisibleCount((prev) => prev + 12)}
+                  className="bg-zinc-900 border border-zinc-800 text-white px-8 py-4 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-zinc-800 hover:border-zinc-700 transition-all flex items-center gap-3 shadow-lg hover:shadow-xl active:scale-95"
+                >
+                  Ver mais mantos
+                  <span className="text-zinc-500 font-normal text-[10px] bg-black px-2 py-1 rounded-md">
+                    + {Math.min(12, camisasFiltradas.length - visibleCount)}
+                  </span>
+                </button>
               </div>
             )}
           </>

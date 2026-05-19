@@ -3,6 +3,85 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
+interface CamisaRowProps {
+  camisa: any;
+  updateImage: (id: string, newUrl: string) => void;
+}
+
+function CamisaRow({ camisa, updateImage }: CamisaRowProps) {
+  const [options, setOptions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadImages() {
+      if (!camisa.imagem_url) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/images?url=${encodeURIComponent(camisa.imagem_url)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.urls && data.urls.length > 0) {
+            setOptions(data.urls);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao carregar imagens para", camisa.nome, err);
+      }
+      
+      // Fallback a partir do padrão sequencial
+      const baseUrlMatch = camisa.imagem_url.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp|heic)$/i);
+      if (baseUrlMatch) {
+        const baseUrl = baseUrlMatch[1];
+        const ext = baseUrlMatch[3];
+        const fallback = Array.from({ length: 12 }, (_, i) => `${baseUrl}${i + 1}.${ext}`);
+        setOptions(fallback);
+      } else {
+        setOptions([camisa.imagem_url]);
+      }
+      setLoading(false);
+    }
+
+    loadImages();
+  }, [camisa.imagem_url, camisa.nome]);
+
+  if (!camisa.imagem_url) return null;
+
+  return (
+    <div className="p-4 border border-zinc-900 rounded-2xl bg-[#0a0a0a]">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold uppercase tracking-tight text-zinc-200">{camisa.nome}</h2>
+        {loading && <span className="text-[10px] text-zinc-500 uppercase tracking-widest animate-pulse">Escaneando pasta...</span>}
+      </div>
+      
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
+        {options.map(url => (
+          <div 
+            key={url} 
+            className={`shrink-0 border-2 rounded-xl overflow-hidden transition-all ${
+              camisa.imagem_url === url ? 'border-red-600 scale-105 shadow-[0_0_15px_rgba(220,38,38,0.3)]' : 'border-transparent hover:border-zinc-700'
+            }`}
+          >
+            <img 
+              src={url} 
+              alt="" 
+              className="w-24 h-24 md:w-32 md:h-32 object-cover bg-zinc-950 cursor-pointer"
+              onClick={() => updateImage(camisa.id, url)}
+              onError={(e) => { 
+                const parent = (e.target as HTMLElement).parentElement;
+                if (parent) parent.style.display = 'none'; 
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function FixImagesPage() {
   const [camisas, setCamisas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,44 +170,13 @@ export default function FixImagesPage() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {camisasFiltradas.map(camisa => {
-            if (!camisa.imagem_url) return null;
-            
-            const baseUrlMatch = camisa.imagem_url.match(/^(.*\/)(\d+)\.(jpg|jpeg|png|webp|heic)$/i);
-            if (!baseUrlMatch) return null;
-            
-            const baseUrl = baseUrlMatch[1];
-            const ext = baseUrlMatch[3];
-            
-            const options = Array.from({ length: 12 }, (_, i) => `${baseUrl}${i + 1}.${ext}`);
-
-            return (
-              <div key={camisa.id} className="p-4 border border-zinc-900 rounded-2xl bg-[#0a0a0a]">
-                <h2 className="text-lg font-bold mb-4 uppercase tracking-tight text-zinc-200">{camisa.nome}</h2>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-800">
-                  {options.map(url => (
-                    <div 
-                      key={url} 
-                      className={`shrink-0 border-2 rounded-xl overflow-hidden transition-all ${
-                        camisa.imagem_url === url ? 'border-red-600 scale-105 shadow-[0_0_15px_rgba(220,38,38,0.3)]' : 'border-transparent hover:border-zinc-700'
-                      }`}
-                    >
-                      <img 
-                        src={url} 
-                        alt="" 
-                        className="w-24 h-24 md:w-32 md:h-32 object-cover bg-zinc-950 cursor-pointer"
-                        onClick={() => updateImage(camisa.id, url)}
-                        onError={(e) => { 
-                          const parent = (e.target as HTMLElement).parentElement;
-                          if (parent) parent.style.display = 'none'; 
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          {camisasFiltradas.map(camisa => (
+            <CamisaRow 
+              key={camisa.id} 
+              camisa={camisa} 
+              updateImage={updateImage} 
+            />
+          ))}
           
           {camisasFiltradas.length === 0 && (
             <div className="text-center py-20 text-zinc-500">Nenhuma camisa encontrada.</div>

@@ -246,7 +246,7 @@ export default function ProductModal({
 
   // ─── Cálculos de Preço e Validação ───
 
-  const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome);
+  const displayCategory = getDisplayCategory(camisa.categoria, camisa.nome, camisa.imagem_url);
   // O preço exibido deve seguir as regras de negócio em vez do banco de dados cego
   const basePrice = getPriceByCategory(displayCategory, camisa.nome, camisa.preco);
   const priceModifier = size ? SIZE_MODIFIER[size as Size] : 0;
