@@ -73,8 +73,10 @@ export function getPriceByCategory(
 
   // Regra 4: Seleções (Copa do mundo, seleções nacionais, etc)
   if (cat === 'SELEÇÃO') {
-    // Retorna o preço diferenciado se for do Brasil, ou o padrão de seleção caso contrário
-    return isBrasil(nome) ? PRECO_BRASIL : PRECO_SELECAO;
+    // Retorna o preço diferenciado se for do Brasil, Copa 2026, ou o padrão
+    if (isBrasil(nome)) return PRECO_BRASIL;
+    if (nomeUpper.includes('2026')) return 169.99;
+    return PRECO_SELECAO;
   }
 
   // Regra 5: Demais categorias (Brasileiros, Europeus, Outros) assumem o preço base de temporada
