@@ -12,7 +12,8 @@ import {
   Image as ImageIcon,
   Check,
   RotateCw,
-  Settings
+  Settings,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 
@@ -84,7 +85,7 @@ function CamisaRow({ camisa, updateImage }: CamisaRowProps) {
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-            <h2 className="text-lg font-extrabold uppercase tracking-tight text-zinc-105 group-hover:text-white transition-colors">
+            <h2 className="text-lg font-extrabold uppercase tracking-tight text-zinc-100 group-hover:text-white transition-colors">
               {camisa.nome}
             </h2>
           </div>
@@ -130,7 +131,7 @@ function CamisaRow({ camisa, updateImage }: CamisaRowProps) {
               <div 
                 className={`relative rounded-2xl overflow-hidden border-3 transition-all duration-300 cursor-pointer ${
                   isActive 
-                    ? 'border-red-650 shadow-[0_0_20px_rgba(220,38,38,0.4)]' 
+                    ? 'border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.4)]' 
                     : 'border-zinc-850 hover:border-zinc-700'
                 }`}
                 onClick={() => {
@@ -176,6 +177,7 @@ export default function FixImagesPage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [busca, setBusca] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("TUDO");
+  const [visibleCount, setVisibleCount] = useState(8);
 
   useEffect(() => {
     async function load() {
@@ -185,6 +187,11 @@ export default function FixImagesPage() {
     }
     load();
   }, []);
+
+  // Quando mudar o termo de busca ou a categoria ativa, reseta a exibição para 8 camisas
+  useEffect(() => {
+    setVisibleCount(8);
+  }, [busca, categoriaAtiva]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,6 +216,10 @@ export default function FixImagesPage() {
     if (!res.ok) {
       alert("Erro ao atualizar a imagem no banco de dados.");
     }
+  };
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + 8);
   };
 
   if (loading) {
@@ -243,7 +254,7 @@ export default function FixImagesPage() {
               <input 
                 type="password" 
                 placeholder="Insira a senha mestra" 
-                className="w-full bg-zinc-900/40 border border-zinc-800/85 text-white p-3.5 pl-4 rounded-2xl outline-none focus:border-red-600/60 focus:ring-2 focus:ring-red-500/10 transition-all text-sm placeholder-zinc-600"
+                className="w-full bg-zinc-900/40 border border-zinc-800/85 text-white p-3.5 pl-4 rounded-2xl outline-none focus:border-red-600/60 focus:ring-2 focus:ring-red-500/10 transition-all text-sm placeholder-zinc-650"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 autoFocus
@@ -271,6 +282,14 @@ export default function FixImagesPage() {
     const matchesCategory = categoriaAtiva === "TUDO" || c.displayCategory === categoriaAtiva;
     return matchesSearch && matchesCategory;
   });
+
+  // Camisas que realmente serão exibidas no DOM (paginadas progressivamente)
+  const camisasExibidas = camisasFiltradas.slice(0, visibleCount);
+  
+  // Porcentagem de visualização das camisas
+  const percentage = camisasFiltradas.length > 0 
+    ? Math.min(100, Math.round((camisasExibidas.length / camisasFiltradas.length) * 100))
+    : 0;
 
   // Categorias disponíveis para filtro
   const categorias = [
@@ -326,7 +345,7 @@ export default function FixImagesPage() {
               <input 
                 type="text" 
                 placeholder="Buscar camisa pelo nome..." 
-                className="w-full bg-zinc-950/60 border border-zinc-900 text-white p-3.5 pl-11 pr-10 rounded-2xl outline-none focus:border-red-650/50 focus:ring-2 focus:ring-red-500/10 transition-all text-sm placeholder-zinc-550"
+                className="w-full bg-zinc-950/60 border border-zinc-900 text-white p-3.5 pl-11 pr-10 rounded-2xl outline-none focus:border-red-600/50 focus:ring-2 focus:ring-red-500/10 transition-all text-sm placeholder-zinc-555"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
@@ -351,7 +370,7 @@ export default function FixImagesPage() {
                       onClick={() => setCategoriaAtiva(cat.id)}
                       className={`px-4 py-2 rounded-2xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 cursor-pointer ${
                         isActive 
-                          ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)] border border-red-550' 
+                          ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)] border border-red-500/40' 
                           : 'bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-zinc-200 hover:border-zinc-800'
                       }`}
                     >
@@ -402,19 +421,19 @@ export default function FixImagesPage() {
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-widest">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
             <span>
-              {camisasFiltradas.length} {camisasFiltradas.length === 1 ? 'Camisa encontrada' : 'Camisas encontradas'}
+              Mostrando {camisasExibidas.length} de {camisasFiltradas.length} {camisasFiltradas.length === 1 ? 'camisa encontrada' : 'camisas encontradas'}
             </span>
           </div>
           {camisas.length > 0 && camisasFiltradas.length !== camisas.length && (
-            <span className="text-[10px] text-zinc-650 font-bold uppercase tracking-wider">
-              Filtrado de um total de {camisas.length}
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+              Filtrado de {camisas.length} no total
             </span>
           )}
         </div>
 
-        {/* Lista de Camisas */}
+        {/* Lista de Camisas (Paginada) */}
         <div className="flex flex-col gap-6">
-          {camisasFiltradas.map(camisa => (
+          {camisasExibidas.map(camisa => (
             <CamisaRow 
               key={camisa.id} 
               camisa={camisa} 
@@ -443,6 +462,32 @@ export default function FixImagesPage() {
             </div>
           )}
         </div>
+
+        {/* Bloco de Progresso e Carregamento Progressivo (Ver Mais) */}
+        {camisasFiltradas.length > 0 && (
+          <div className="mt-8 pt-8 border-t border-zinc-950 flex flex-col items-center justify-center text-center">
+            <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2.5">
+              Você visualizou {camisasExibidas.length} de {camisasFiltradas.length} camisas
+            </p>
+            
+            <div className="w-64 h-1 bg-zinc-900 rounded-full overflow-hidden mb-5">
+              <div 
+                className="h-full bg-red-650 transition-all duration-500 rounded-full shadow-[0_0_8px_rgba(220,38,38,0.5)]" 
+                style={{ width: `${percentage}%` }}
+              ></div>
+            </div>
+
+            {camisasFiltradas.length > visibleCount && (
+              <button 
+                onClick={handleLoadMore}
+                className="bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 text-zinc-300 hover:text-white transition-all duration-300 font-extrabold px-8 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-xl hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto text-xs uppercase tracking-widest"
+              >
+                <ChevronDown size={14} className="stroke-[3] text-red-500" />
+                Carregar Mais Camisetas
+              </button>
+            )}
+          </div>
+        )}
 
       </div>
     </div>
