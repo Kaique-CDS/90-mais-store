@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,12 +11,14 @@ import {
   ImagePlus,
   Package,
   Tag,
-  DollarSign,
   FolderOpen,
   Shirt,
   AlertCircle,
   CheckCircle2,
   Info,
+  FolderPlus,
+  RefreshCw,
+  FilePlus2,
 } from "lucide-react";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -118,6 +120,9 @@ function uid() {
 
 // ─── Componente Principal ────────────────────────────────────────────────────
 
+// Estado do path: "new" = pasta nova, "exists" = já existe no storage, "checking" = verificando
+type PathStatus = "idle" | "checking" | "new" | "exists";
+
 export default function CadastrarCamisaPage() {
   // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -129,12 +134,15 @@ export default function CadastrarCamisaPage() {
   const [categoria, setCategoria] = useState("EUROPEUS");
   const [preco, setPreco] = useState("149.99");
   const [storagePath, setStoragePath] = useState("");
+  const [pathStatus, setPathStatus] = useState<PathStatus>("idle");
+  const [existingFileCount, setExistingFileCount] = useState(0);
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; action?: string; message: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pathCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Autenticação ──
   const handleLogin = (e: React.FormEvent) => {
@@ -146,6 +154,42 @@ export default function CadastrarCamisaPage() {
       setAuthError("Senha incorreta. Tente novamente.");
     }
   };
+
+  // ── Verificação de path existente no storage (via API de imagens) ──
+  const checkPathExists = useCallback(async (path: string) => {
+    if (!path.trim()) { setPathStatus("idle"); return; }
+    setPathStatus("checking");
+    try {
+      // Constrói URL de uma possível imagem 1.jpg no path e checa via API
+      const testUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/camisas/${path}/1.jpg`;
+      const res = await fetch(`/api/images?url=${encodeURIComponent(testUrl)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const count = data.urls?.length ?? 0;
+        if (count > 0) {
+          setPathStatus("exists");
+          setExistingFileCount(count);
+        } else {
+          setPathStatus("new");
+          setExistingFileCount(0);
+        }
+      } else {
+        setPathStatus("new");
+        setExistingFileCount(0);
+      }
+    } catch {
+      setPathStatus("new");
+      setExistingFileCount(0);
+    }
+  }, []);
+
+  // Debounce do check de path (500ms após parar de digitar)
+  useEffect(() => {
+    if (pathCheckTimer.current) clearTimeout(pathCheckTimer.current);
+    if (!storagePath.trim()) { setPathStatus("idle"); return; }
+    pathCheckTimer.current = setTimeout(() => checkPathExists(storagePath), 500);
+    return () => { if (pathCheckTimer.current) clearTimeout(pathCheckTimer.current); };
+  }, [storagePath, checkPathExists]);
 
   // ── Sugestão automática de path no storage ──
   const suggestPath = (n: string, cat: string) => {
@@ -299,15 +343,21 @@ export default function CadastrarCamisaPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        const isUpdate = data.action === "updated";
         setResult({
           success: true,
-          message: `✅ "${data.record.nome}" cadastrada com ${data.uploadedCount} foto(s)!`,
+          action: data.action,
+          message: isUpdate
+            ? `✅ Fotos adicionadas! "${data.record.nome}" atualizada — agora tem ${data.record.total_fotos} foto(s) no total.`
+            : `✅ "${data.record.nome}" cadastrada com sucesso! ${data.uploadedCount} foto(s) salvas.`,
         });
         // Reset form
         setNome("");
         setStoragePath("");
         setPreco("149.99");
         setCategoria("EUROPEUS");
+        setPathStatus("idle");
+        setExistingFileCount(0);
         files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
         setFiles([]);
       } else {
@@ -481,19 +531,64 @@ export default function CadastrarCamisaPage() {
           </section>
 
           {/* ── Bloco 2: Caminho no Storage ── */}
-          <section className="bg-zinc-950 border border-zinc-900 rounded-3xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FolderOpen size={14} className="text-red-500" />
-              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Caminho no Storage</h2>
+          <section className={`border rounded-3xl p-6 transition-colors duration-300 ${
+            pathStatus === "exists"
+              ? "bg-amber-950/10 border-amber-900/50"
+              : pathStatus === "new"
+              ? "bg-emerald-950/10 border-emerald-900/40"
+              : "bg-zinc-950 border-zinc-900"
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FolderOpen size={14} className={pathStatus === "exists" ? "text-amber-500" : pathStatus === "new" ? "text-emerald-500" : "text-red-500"} />
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Caminho no Storage</h2>
+              </div>
+              {/* Badge de status do path */}
+              {pathStatus === "checking" && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-zinc-500 uppercase tracking-wider">
+                  <RefreshCw size={10} className="animate-spin" /> Verificando...
+                </span>
+              )}
+              {pathStatus === "new" && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase tracking-wider bg-emerald-950/30 border border-emerald-900/40 px-2.5 py-1 rounded-xl">
+                  <FolderPlus size={10} /> Pasta nova
+                </span>
+              )}
+              {pathStatus === "exists" && (
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-amber-500 uppercase tracking-wider bg-amber-950/30 border border-amber-900/40 px-2.5 py-1 rounded-xl">
+                  <FilePlus2 size={10} /> Já existe · {existingFileCount} foto(s)
+                </span>
+              )}
             </div>
 
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3 mb-4 flex items-start gap-2">
-              <Info size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
-              <p className="text-zinc-400 text-xs leading-relaxed">
-                Caminho gerado automaticamente pelo nome. As imagens serão salvas como{" "}
-                <code className="text-zinc-300 bg-zinc-800 px-1 rounded">1.jpg, 2.jpg...</code> dentro desta pasta.
-              </p>
-            </div>
+            {/* Info contextual baseada no status */}
+            {pathStatus === "exists" ? (
+              <div className="bg-amber-950/20 border border-amber-900/30 rounded-2xl p-3 mb-4 flex items-start gap-2">
+                <Info size={13} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-amber-300/80 text-xs leading-relaxed">
+                  <strong>Pasta já existe</strong> com {existingFileCount} foto(s). As novas imagens serão adicionadas a partir do número{" "}
+                  <code className="bg-amber-950/40 px-1 rounded">{existingFileCount + 1}.jpg</code> sem sobrescrever nada.
+                  O registro no banco será <strong>atualizado</strong> automaticamente.
+                </p>
+              </div>
+            ) : pathStatus === "new" ? (
+              <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-2xl p-3 mb-4 flex items-start gap-2">
+                <Info size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                <p className="text-emerald-300/80 text-xs leading-relaxed">
+                  <strong>Pasta nova</strong> — será criada no storage e um novo registro será inserido no banco.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-3 mb-4 flex items-start gap-2">
+                <Info size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="text-zinc-400 text-xs leading-relaxed space-y-1">
+                  <p>Caminho gerado pelo nome. Suporta 3 cenários automaticamente:</p>
+                  <p>🟢 <strong>Time novo</strong> → cria pasta + insere no banco</p>
+                  <p>🟢 <strong>Time existente, camisa nova</strong> → cria subpasta + insere no banco</p>
+                  <p>🟡 <strong>Camisa já existente</strong> → adiciona fotos sem sobrescrever + atualiza banco</p>
+                </div>
+              </div>
+            )}
 
             <input
               type="text"
@@ -501,12 +596,16 @@ export default function CadastrarCamisaPage() {
               value={storagePath}
               onChange={(e) => setStoragePath(e.target.value)}
               required
-              className="w-full bg-zinc-900 border border-zinc-800 focus:border-red-600 text-white px-4 py-3.5 rounded-2xl outline-none transition-all text-xs font-mono placeholder-zinc-700"
+              className={`w-full bg-zinc-900 text-white px-4 py-3.5 rounded-2xl outline-none transition-all text-xs font-mono placeholder-zinc-700 border ${
+                pathStatus === "exists" ? "border-amber-800 focus:border-amber-600"
+                : pathStatus === "new"  ? "border-emerald-800 focus:border-emerald-600"
+                : "border-zinc-800 focus:border-red-600"
+              }`}
             />
 
             {storagePath && (
               <p className="text-zinc-600 text-[10px] mt-2 font-mono">
-                📁 camisas/{storagePath}/1.jpg
+                📁 camisas/{storagePath}/{pathStatus === "exists" ? `${existingFileCount + 1}.jpg` : "1.jpg"}
               </p>
             )}
           </section>
