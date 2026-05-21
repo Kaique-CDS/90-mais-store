@@ -15,7 +15,7 @@
 
 // Tabela constante de preços base (facilita alterações futuras num único lugar)
 const PRECO_PADRAO        = 149.99; // camisas de temporada (com ano/número)
-const PRECO_26_27         = 159.99; // camisas 26-27
+const PRECO_26_27         = 169.99; // camisas 26-27
 const PRECO_RETRO         = 199.99;
 const PRECO_JOGADOR       = 219.00;
 const PRECO_SELECAO       = 159.99;
@@ -75,7 +75,7 @@ export function getPriceByCategory(
   }
 
   // Regra 5: Seleções (Copa do mundo, seleções nacionais, etc)
-  if (cat === 'SELEÇÃO') {
+  if (cat === 'SELEÇÕES') {
     // Retorna o preço diferenciado se for do Brasil, Copa 2026, ou o padrão
     if (isBrasil(nome)) return PRECO_BRASIL;
     if (nomeUpper.includes('2026')) return 169.99;

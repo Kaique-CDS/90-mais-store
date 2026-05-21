@@ -7,7 +7,7 @@ export const CATEGORIES = [
   'TUDO',
   'BRASILEIROS',
   'EUROPEUS',
-  'SELEÇÃO',
+  'SELEÇÕES',
   'OUTROS',
   'RETRO',
   'TREINO',
@@ -15,6 +15,9 @@ export const CATEGORIES = [
 
 // Tipagem baseada no array de categorias constantes para garantir type safety
 export type Category = (typeof CATEGORIES)[number]
+
+// Alias interno para compatibilidade com dados do banco (SELEÇÃO → SELEÇÕES)
+export const SELECAO_DISPLAY = 'SELEÇÕES'
 
 /** 
  * Lista de times que pertencem ao Brasileirão.
@@ -63,6 +66,7 @@ const SELECOES_TEAMS = [
 const EUROPEUS_TEAMS = [
   'Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Milan', 'Inter', 'Juventus',
   'Napoli', 'Roma', 'Lazio', 'Arsenal', 'Chelsea', 'Liverpool', 'Manchester', 'Tottenham', 'Aston Villa', 'Newcastle',
+  'Brighton',
   'Bayern', 'Borussia', 'Bayer Leverkusen', 'Rb Leipzig', 'Psg', 'Paris', 'Lyon', 'Marseille', 'Monaco', 'Ajax', 'Psv', 'Feyenoord', 'Benfica',
   'Porto', 'Sporting'
 ]
@@ -109,7 +113,7 @@ export function getDisplayCategory(
       return 'EUROPEUS'
     }
     if (decodedUrl.includes('/selecao/')) {
-      return 'SELEÇÃO'
+      return 'SELEÇÕES'
     }
     if (decodedUrl.includes('/outros lugares do mundo/')) {
       return 'OUTROS'
@@ -117,7 +121,8 @@ export function getDisplayCategory(
   }
 
   // 4. Se o banco de dados já estiver utilizando o formato das novas categorias, apenas retorna
-  const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'OUTROS', 'RETRO', 'TREINO']
+  const newCats = ['BRASILEIROS', 'EUROPEUS', 'SELEÇÃO', 'SELEÇÕES', 'OUTROS', 'RETRO', 'TREINO']
+  if (cat === 'SELEÇÃO') return 'SELEÇÕES' // Normaliza para novo nome
   if (newCats.includes(cat)) return cat
 
   // 5. Transição de dados antigos EXPLICITOS
@@ -139,7 +144,7 @@ export function getDisplayCategory(
   // 7. Transição do dado antigo "INTERNACIONAL":
   if (cat === 'INTERNACIONAL') {
     const isSelecao = nomeUpper.includes('COPA') || SELECOES_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
-    return isSelecao ? 'SELEÇÃO' : 'EUROPEUS'
+    return isSelecao ? 'SELEÇÕES' : 'EUROPEUS'
   }
 
   // 8. Adivinhação para produtos COMPLETAMENTE SEM CATEGORIA no banco de dados
@@ -148,7 +153,7 @@ export function getDisplayCategory(
     if (isBrasileiro) return 'BRASILEIROS'
 
     const isSelecao = SELECOES_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
-    if (isSelecao) return 'SELEÇÃO'
+    if (isSelecao) return 'SELEÇÕES'
 
     const isEuropeu = EUROPEUS_TEAMS.some((t) => nomeUpper.startsWith(t.toUpperCase() + ' ') || nomeUpper === t.toUpperCase())
     if (isEuropeu) return 'EUROPEUS'

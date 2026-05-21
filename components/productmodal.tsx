@@ -20,12 +20,12 @@ import { getOptimizedImageUrl } from "@/lib/images";
 
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
-const SIZES = ["P", "M", "G", "GG", "G1", "G2"] as const;
+const SIZES = ["P", "M", "G", "GG", "G1"] as const;
 type Size = (typeof SIZES)[number];
 
-// Modificadores de preço fixos para tamanhos especiais (G1 e G2 cobram +R$20)
+// Modificadores de preço fixos para tamanhos especiais (G1 cobra +R$20)
 const SIZE_MODIFIER: Record<Size, number> = {
-  P: 0, M: 0, G: 0, GG: 0, G1: 20, G2: 20,
+  P: 0, M: 0, G: 0, GG: 0, G1: 20,
 };
 
 // Quantidade máxima de miniaturas visíveis na barra inferior ao mesmo tempo
@@ -44,7 +44,7 @@ function getSizeChartImage(displayCategory: string, nome: string): string {
   // Retrô
   if (cat === "RETRO") return "/Retro.jpeg";
   // Seleção — usa tabela Torcedor (mesmo corte) até enviar arte específica
-  if (cat === "SELEÇÃO") return "/Torcedor.jpeg";
+  if (cat === "SELEÇÕES") return "/Torcedor.jpeg";
   // Padrão (torcedor/temporada)
   return "/Torcedor.jpeg";
 }
@@ -484,8 +484,8 @@ export default function ProductModal({
                   }`}
                 >
                   <span>{s}</span>
-                  {/* Etiqueta +R$20 no botão se for Plus Size */}
-                  {(s === "G1" || s === "G2") && (
+                  {/* Etiqueta +R$20 no botão se for Plus Size (G1) */}
+                  {s === "G1" && (
                     <span className="text-[8px] font-bold text-cyan-400 -mt-0.5">
                       +R$20
                     </span>

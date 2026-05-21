@@ -56,10 +56,13 @@ export default function Home() {
               if (!c.imagem_url) return true;
 
               const imgLower = c.imagem_url.toLowerCase();
-              // Filtro de Segurança: Bloqueia imagens no formato HEIC (iPhone) pois não renderizam no navegador
-              if (imgLower.endsWith(".heic") || imgLower.endsWith(".heif")) return false;
-
               const nomeLower = c.nome.toLowerCase();
+              const isRetro = nomeLower.includes("retro") || nomeLower.includes("retrô");
+
+              // Filtro de Segurança: Bloqueia imagens no formato HEIC (iPhone) pois não renderizam no navegador
+              // Exceção: camisas retrô (que podem ter imagens antigas em HEIC) sempre aparecem
+              if (!isRetro && (imgLower.endsWith(".heic") || imgLower.endsWith(".heif"))) return false;
+
               // Filtro de Segurança: Bloqueia produtos marcados como 'print' ou 'screenshot'
               if (nomeLower.includes("print") || nomeLower.includes("screenshot")) return false;
 

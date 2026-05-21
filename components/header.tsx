@@ -3,6 +3,7 @@
 import { Search, ShoppingCart } from "lucide-react";
 import { useCart } from "@/components/cartcontext";
 import { CATEGORIES } from "@/lib/categories";
+import DiscountBanner from "@/components/discount-banner";
 
 interface HeaderProps {
   /** Função que atualiza o estado de busca textual no componente pai (Home) */
@@ -30,8 +31,11 @@ export default function HeaderAcervo({
   const { totalItens } = useCart();
 
   return (
-    <header className="w-full pt-10 pb-6 px-6 bg-black border-b border-zinc-900">
-      <div className="max-w-7xl mx-auto flex flex-col gap-6">
+    <header className="w-full pt-0 pb-6 px-0 bg-black border-b border-zinc-900">
+      {/* ── BANNER DE DESCONTO ── */}
+      <DiscountBanner />
+
+      <div className="max-w-7xl mx-auto flex flex-col gap-6 px-6 pt-8">
         {/* Linha 1: Logo, Busca e Botão do Carrinho */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Área do Logo */}
