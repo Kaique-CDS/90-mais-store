@@ -131,10 +131,17 @@ export default function Home() {
    * Recalcula a lista de camisas visíveis sempre que o `searchTerm`, `activeCategory` ou a lista base mudar.
    */
   const camisasFiltradas = camisas.filter((c) => {
+    // Função helper para remover acentos
+    const removeAcentos = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const normalizedSearch = removeAcentos(searchTerm.toLowerCase());
+    const normalizedNome = removeAcentos(c.nome.toLowerCase());
+    const normalizedCat = c.categoria ? removeAcentos(c.categoria.toLowerCase()) : "";
+
     // Verifica se o texto de busca bate com o nome ou com a categoria
     const matchSearch =
-      c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.categoria?.toLowerCase().includes(searchTerm.toLowerCase());
+      normalizedNome.includes(normalizedSearch) ||
+      normalizedCat.includes(normalizedSearch);
 
     // Verifica se a camisa pertence à categoria clicada no header
     const matchCat = matchesCategory(c.categoria, c.nome, activeCategory, c.imagem_url);

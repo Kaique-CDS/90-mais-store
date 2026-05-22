@@ -296,7 +296,7 @@ export default function FixImagesPage() {
     { id: "TUDO", label: "TUDO" },
     { id: "BRASILEIROS", label: "BRASILEIRÃO" },
     { id: "EUROPEUS", label: "EUROPA" },
-    { id: "SELEÇÃO", label: "SELEÇÕES" },
+    { id: "SELEÇÕES", label: "SELEÇÕES" },
     { id: "OUTROS", label: "OUTROS" },
     { id: "RETRO", label: "RETRÔ" },
     { id: "TREINO", label: "TREINO" }

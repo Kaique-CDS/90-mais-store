@@ -60,19 +60,19 @@ export function getPriceByCategory(
   const isJogador = nomeUpper.includes('JOGADOR');
   const isRetro = nomeUpper.includes('RETRO') || nomeUpper.includes('RETRÔ');
 
-  // Regra 1: Camisa versão JOGADOR da Seleção Brasileira (Maior prioridade)
-  if (isJogador && isBrasil(nome)) return PRECO_JOGADOR_BRASIL;
-
-  // Regra 2: Camisa versão JOGADOR (outros times)
-  if (isJogador) return PRECO_JOGADOR;
-
-  // Regra 3: Retrô — detectado PELO NOME (cobre todas as categorias: Brasileiros, Europeus, Seleção, RETRO)
-  if (isRetro) return PRECO_RETRO;
-
-  // Regra 4: Camisas temporada 26-27 (não-jogador, não-retro)
+  // Regra 1: Camisas temporada 26-27 (maior prioridade)
   if (nomeUpper.includes('26-27') || nomeUpper.includes('26/27')) {
     return PRECO_26_27;
   }
+
+  // Regra 2: Camisa versão JOGADOR da Seleção Brasileira
+  if (isJogador && isBrasil(nome)) return PRECO_JOGADOR_BRASIL;
+
+  // Regra 3: Camisa versão JOGADOR (outros times)
+  if (isJogador) return PRECO_JOGADOR;
+
+  // Regra 4: Retrô — detectado PELO NOME (cobre todas as categorias: Brasileiros, Europeus, Seleção, RETRO)
+  if (isRetro) return PRECO_RETRO;
 
   // Regra 5: Seleções (Copa do mundo, seleções nacionais, etc)
   if (cat === 'SELEÇÕES') {
