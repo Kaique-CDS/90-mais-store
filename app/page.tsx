@@ -170,10 +170,39 @@ export default function Home() {
     setIsCartOpen(true);     // Abre a sidebar do carrinho
   };
 
+  /**
+   * Função para resetar os filtros e voltar para o início do catálogo
+   */
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setActiveCategory("TUDO");
+    setVisibleCount(12);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Selecionar as 4 camisas "Mais Vendidas"
+  const maisVendidas: Product[] = [];
+  const getCamisa = (matcher: (n: string) => boolean) => {
+    return camisas.find(c => matcher(c.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
+  };
+  
+  const b1 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bi\b/.test(n) && !/\bii\b/.test(n));
+  if (b1) maisVendidas.push(b1);
+  
+  const b2 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bii\b/.test(n));
+  if (b2) maisVendidas.push(b2);
+  
+  const cor = getCamisa(n => n.includes("corinthians") && (n.includes("26-27") || n.includes("26/27")));
+  if (cor) maisVendidas.push(cor);
+  
+  const fla = getCamisa(n => n.includes("flamengo") && (n.includes("26-27") || n.includes("26/27")));
+  if (fla) maisVendidas.push(fla);
+
   return (
     <main className="min-h-screen bg-black text-white selection:bg-red-600 selection:text-white">
       {/* ── CABEÇALHO ── */}
       <HeaderAcervo
+        searchTerm={searchTerm}
         onSearch={(term) => {
           setSearchTerm(term);
           if (term.trim() !== "") {
@@ -183,6 +212,7 @@ export default function Home() {
         onOpenCart={() => setIsCartOpen(true)}
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
+        onResetFilters={handleResetFilters}
       />
 
       {/* ── CONTEÚDO PRINCIPAL ── */}
@@ -198,6 +228,25 @@ export default function Home() {
         ) : (
           // Exibição do Catálogo
           <>
+            {/* ── MAIS VENDIDAS ── */}
+            {activeCategory === "TUDO" && searchTerm === "" && maisVendidas.length > 0 && (
+              <div className="mb-12">
+                <div className="flex items-center gap-3 mb-6">
+                  <h2 className="text-xl font-black uppercase tracking-widest text-white">MAIS VENDIDAS</h2>
+                  <div className="h-[1px] flex-1 bg-zinc-900"></div>
+                </div>
+                <Catalog
+                  camisetas={maisVendidas}
+                  onSelectCamisa={setSelectedCamisa}
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-xl font-black uppercase tracking-widest text-white">TODOS OS MANTOS</h2>
+              <div className="h-[1px] flex-1 bg-zinc-900"></div>
+            </div>
+
             <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-6">
               {camisasFiltradas.length} {camisasFiltradas.length === 1 ? "manto encontrado" : "mantos encontrados"}
             </p>

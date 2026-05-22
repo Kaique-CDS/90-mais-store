@@ -6,6 +6,8 @@ import { CATEGORIES } from "@/lib/categories";
 import DiscountBanner from "@/components/discount-banner";
 
 interface HeaderProps {
+  /** Termo atual de busca para manter o input controlado */
+  searchTerm: string;
   /** Função que atualiza o estado de busca textual no componente pai (Home) */
   onSearch: (term: string) => void;
   /** Função para abrir o Drawer do carrinho */
@@ -14,6 +16,8 @@ interface HeaderProps {
   activeCategory: string;
   /** Função para alterar a categoria selecionada */
   setActiveCategory: (cat: string) => void;
+  /** Função para resetar os filtros e voltar à página inicial */
+  onResetFilters: () => void;
 }
 
 /**
@@ -22,10 +26,12 @@ interface HeaderProps {
  * e o carrossel horizontal de filtros de categoria.
  */
 export default function HeaderAcervo({
+  searchTerm,
   onSearch,
   onOpenCart,
   activeCategory,
   setActiveCategory,
+  onResetFilters,
 }: HeaderProps) {
   // Pegamos a quantidade de itens do contexto para mostrar no Badge vermelho do carrinho
   const { totalItens } = useCart();
@@ -39,7 +45,11 @@ export default function HeaderAcervo({
         {/* Linha 1: Logo, Busca e Botão do Carrinho */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           {/* Área do Logo */}
-          <div className="flex-shrink-0 h-8 md:h-10 w-auto flex items-center justify-start">
+          <button 
+            onClick={onResetFilters}
+            className="flex-shrink-0 h-8 md:h-10 w-auto flex items-center justify-start cursor-pointer hover:opacity-80 transition-opacity"
+            title="Limpar filtros e voltar para a página inicial"
+          >
             <img 
               src="/logo.png" 
               alt="90+ Store" 
@@ -55,7 +65,7 @@ export default function HeaderAcervo({
             <h1 className="hidden text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
               90+ <span className="text-red-600">STORE</span>
             </h1>
-          </div>
+          </button>
 
           {/* Área de Interação (Busca + Carrinho) */}
           <div className="flex items-center gap-3 w-full md:w-auto">
@@ -65,6 +75,7 @@ export default function HeaderAcervo({
               <input
                 type="text"
                 placeholder="BUSCAR TIME..."
+                value={searchTerm}
                 onChange={(e) => onSearch(e.target.value)}
                 className="w-full bg-zinc-900/50 border border-zinc-800 text-white py-4 pl-12 pr-6 rounded-xl outline-none focus:border-red-600 transition-all font-bold uppercase text-xs tracking-widest"
               />
