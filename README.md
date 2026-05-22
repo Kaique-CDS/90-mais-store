@@ -21,7 +21,7 @@ O **90+ Store** foi arquitetado para resolver a fricção de vendas encontrada e
 
 ## ✨ Funcionalidades em Destaque
 
-- 🛒 **Carrinho Inteligente & Persistente:** Seleção de múltiplos itens com soma automática, regras de negócio dinâmicas (+R$20 G1/G2, +R$70 Personalização) e memória local (carrinho não é perdido ao atualizar a página).
+- 🛒 **Carrinho Inteligente & Persistente:** Seleção de múltiplos itens com soma automática, regras de negócio dinâmicas (+R$20 G1, +R$70 Personalização) e memória local (carrinho não é perdido ao atualizar a página).
 - ⚡ **Performance Extrema:** Otimização agressiva de imagens (`next/image` + WebP), carregamento paralelo (`Promise.all`), e paginação com Scroll Infinito (Intersection Observer).
 - 📲 **Checkout via WhatsApp:** Geração automática de deep-links formatados com o resumo completo do pedido.
 - 🎨 **Design Imersivo:** Efeitos de glassmorphism, micro-interações, hover-states avançados e zoom dinâmico na galeria de produtos.

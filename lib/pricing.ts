@@ -42,7 +42,7 @@ function isBrasil(nome: string): boolean {
  * Calcula e retorna o preço correto para um produto com base nas regras de negócio da loja.
  * 
  * Importante: o preço final no carrinho é uma composição deste valor 
- * (que é o base) + o modificador de tamanho (ex: G1/G2 adiciona R$20) 
+ * (que é o base) + o modificador de tamanho (ex: G1 adiciona R$20) 
  * + personalização (se houver).
  * 
  * @param displayCategory A categoria já normalizada do produto (ex: 'SELEÇÃO').

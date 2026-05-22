@@ -181,7 +181,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   <p className="text-white font-bold text-xs uppercase leading-tight line-clamp-2">{item.nome}</p>
                   <p className="text-red-600 text-[10px] font-black uppercase mt-0.5">
                     TAM: {item.size}
-                    {/* Se for tamanho Plus (G1/G2), mostra aviso de +R$20 */}
+                    {/* Se for tamanho Plus (G1), mostra aviso de +R$20 */}
                     {item.priceModifier > 0 && (
                       <span className="text-cyan-500 ml-1">(+R${item.priceModifier})</span>
                     )}

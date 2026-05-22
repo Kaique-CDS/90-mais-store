@@ -29,11 +29,11 @@ export interface Personalizacao {
 export interface CartItem extends Product {
   /** ID único gerado para agrupar itens idênticos (mesmo produto, tamanho e personalização) */
   cartId: string;
-  /** Tamanho selecionado (P, M, G, GG, G1, G2) */
+  /** Tamanho selecionado (P, M, G, GG, G1) */
   size: string;
   /** Quantidade desse item exato adicionada ao carrinho */
   quantity: number;
-  /** Acréscimo financeiro devido ao tamanho (Ex: G1 e G2 custam +R$20) */
+  /** Acréscimo financeiro devido ao tamanho (Ex: G1 custa +R$20) */
   priceModifier: number;       
   /** Dados da personalização (nome e número), se houver. Custa +R$70 */
   personalizacao?: Personalizacao; 
