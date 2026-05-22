@@ -13,14 +13,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_PASSWORD = "90maisadmin";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dummy.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "dummy",
+  );
+}
 
 // ─── Helper: lista arquivos já existentes em uma pasta do storage ─────────────
 async function listExistingFiles(storagePath: string): Promise<string[]> {
-  const { data, error } = await supabaseAdmin.storage
+  const { data, error } = await getSupabaseAdmin().storage
     .from("camisas")
     .list(storagePath, { limit: 200, offset: 0 });
 
@@ -47,7 +49,7 @@ async function findExistingRecord(storagePath: string) {
   // Normaliza o path para fazer a busca por substring
   const pathFragment = storagePath.split("/").map(encodeURIComponent).join("/");
 
-  const { data } = await supabaseAdmin
+  const { data } = await getSupabaseAdmin()
     .from("camisetas")
     .select("id, nome, imagem_url, total_fotos, galeria")
     .ilike("imagem_url", `%${storagePath}%`)
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer      = Buffer.from(arrayBuffer);
 
-      const { error: uploadError } = await supabaseAdmin.storage
+      const { error: uploadError } = await getSupabaseAdmin().storage
         .from("camisas")
         .upload(fullPath, buffer, {
           contentType: "image/jpeg",
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
       if (uploadError) {
         // Se o erro for "already exists" tenta com upsert pontual
         if (uploadError.message?.includes("already exists") || (uploadError as any).statusCode === 409) {
-          const { error: upsertError } = await supabaseAdmin.storage
+          const { error: upsertError } = await getSupabaseAdmin().storage
             .from("camisas")
             .upload(fullPath, buffer, { contentType: "image/jpeg", upsert: true });
           if (upsertError) {
@@ -119,7 +121,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const { data: publicData } = supabaseAdmin.storage
+      const { data: publicData } = getSupabaseAdmin().storage
         .from("camisas")
         .getPublicUrl(fullPath);
 
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest) {
       const updatedGaleria = [...currentGaleria, ...uploadedUrls];
       const newTotal = (existingRecord.total_fotos ?? 1) + uploadedUrls.length;
 
-      const { data: updated, error: updateError } = await supabaseAdmin
+      const { data: updated, error: updateError } = await getSupabaseAdmin()
         .from("camisetas")
         .update({
           total_fotos: newTotal,
@@ -161,7 +163,7 @@ export async function POST(req: NextRequest) {
 
     } else {
       // ── INSERE novo registro ──
-      const { data: inserted, error: insertError } = await supabaseAdmin
+      const { data: inserted, error: insertError } = await getSupabaseAdmin()
         .from("camisetas")
         .insert({
           nome,
