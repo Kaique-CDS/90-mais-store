@@ -221,8 +221,22 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               <span>R$ {total.toFixed(2)}</span>
             </div>
 
+            <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex flex-col gap-2 mt-2">
+              <p className="text-zinc-400 text-[10px] uppercase font-bold text-center">
+                Vai levar versão Jogador?
+              </p>
+              <a 
+                href="https://wa.me/5511945342493?text=Ol%C3%A1%2C%20gostaria%20de%20verificar%20a%20disponibilidade%20da%20camisa%20vers%C3%A3o%20Jogador%20do%20time%2Fmodelo%3A%20"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-zinc-800 text-white font-bold py-2 rounded-lg text-xs text-center hover:bg-zinc-700 transition-colors"
+              >
+                Verificar disponibilidade de camisa JOGADOR
+              </a>
+            </div>
+
             <button onClick={finalizarWhatsApp}
-              className="w-full bg-[#D4FF00] text-black font-black py-4 rounded-2xl uppercase tracking-tighter hover:bg-[#b8dd00] active:scale-95 transition-all text-sm">
+              className="w-full bg-[#D4FF00] text-black font-black py-4 rounded-2xl uppercase tracking-tighter hover:bg-[#b8dd00] active:scale-95 transition-all text-sm mt-2">
               Finalizar no WhatsApp
             </button>
           </div>

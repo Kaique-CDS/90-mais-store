@@ -257,7 +257,7 @@ export default function Home() {
               onSelectCamisa={setSelectedCamisa}
             />
 
-            {/* Botão de Ver Mais (substitui o scroll infinito para melhor performance) */}
+            {/* Botão de Ver Mais */}
             {visibleCount < camisasFiltradas.length && (
               <div className="w-full flex items-center justify-center mt-12 mb-8">
                 <button
@@ -271,6 +271,26 @@ export default function Home() {
                 </button>
               </div>
             )}
+
+            {/* Banner: Não achou sua camisa? */}
+            <div className="w-full mt-8 mb-12 flex justify-center px-4">
+              <a
+                href="https://wa.me/5511945342493?text=Ol%C3%A1%21%20N%C3%A3o%20encontrei%20a%20camisa%20que%20eu%20queria%20no%20site.%20Voc%C3%AAs%20conseguem%20encomendar%3F"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-zinc-900/50 border border-zinc-800 hover:border-red-600/50 transition-colors rounded-2xl p-6 sm:p-8 max-w-2xl w-full text-center group"
+              >
+                <h3 className="text-white font-black uppercase tracking-widest mb-2 group-hover:text-red-500 transition-colors">
+                  Não achou sua camisa?
+                </h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Trabalhamos com encomendas de qualquer time ou seleção. Clique aqui e nos mande uma mensagem!
+                </p>
+                <span className="inline-block bg-red-600 text-white font-bold text-xs uppercase px-6 py-3 rounded-full group-hover:bg-red-700 transition-colors">
+                  Falar no WhatsApp
+                </span>
+              </a>
+            </div>
           </>
         )}
       </div>

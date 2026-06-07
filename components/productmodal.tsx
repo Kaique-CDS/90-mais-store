@@ -22,14 +22,14 @@ import { getOptimizedImageUrl } from "@/lib/images";
 
 const SIZES_PADRAO = ["P", "M", "G", "GG", "G1"] as const;
 const SIZES_FEMININO = ["P", "M", "G"] as const;
-const SIZES_INFANTIL = ["3-4", "5-7", "8-10", "11-13"] as const;
+const SIZES_INFANTIL = ["4-5", "5-6", "6-7", "8-9", "10-11", "12-13"] as const;
 
 type Size = (typeof SIZES_PADRAO)[number];
 
 // Modificadores de preço fixos para tamanhos especiais (G1 cobra +R$20)
 const SIZE_MODIFIER: Record<string, number> = {
   P: 0, M: 0, G: 0, GG: 0, G1: 20,
-  "3-4": 0, "5-7": 0, "8-10": 0, "11-13": 0,
+  "4-5": 0, "5-6": 0, "6-7": 0, "8-9": 0, "10-11": 0, "12-13": 0,
 };
 
 /** Detecta se a camisa é infantil do Brasil */
@@ -55,12 +55,12 @@ function getSizeChartImage(displayCategory: string, nome: string): string {
   const cat = displayCategory.toUpperCase().trim();
   const nomeUpper = nome.toUpperCase();
 
-  // Versão Jogador
+  // Ordem de prioridade importa:
+  if (nomeUpper.includes("INFANTIL")) return "/Infantil.jpeg";
+  if (nomeUpper.includes("FEMININA") || nomeUpper.includes("FEMININO")) return "/Feminina.jpeg";
   if (nomeUpper.includes("JOGADOR")) return "/Jogador.jpeg";
-  // Retrô
-  if (cat === "RETRO") return "/Retro.jpeg";
-  // Seleção — usa tabela Torcedor (mesmo corte) até enviar arte específica
-  if (cat === "SELEÇÕES") return "/Torcedor.jpeg";
+  if (cat === "RETRO" || nomeUpper.includes("RETRO") || nomeUpper.includes("RETRÔ")) return "/Retro.jpeg";
+  
   // Padrão (torcedor/temporada)
   return "/Torcedor.jpeg";
 }
@@ -478,15 +478,13 @@ export default function ProductModal({
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                 Escolha o Tamanho
               </label>
-              {/* Link que abre a tabela de medidas (apenas para camisas não-infantis) */}
-              {!isInfantilBrasil(camisa.nome) && (
-                <button
-                  onClick={() => setShowSizeChart(true)}
-                  className="text-red-600 text-[9px] font-black underline flex items-center gap-1 hover:text-red-500"
-                >
-                  <Ruler size={12} /> TABELA
-                </button>
-              )}
+              {/* Link que abre a tabela de medidas */}
+              <button
+                onClick={() => setShowSizeChart(true)}
+                className="text-red-600 text-[9px] font-black underline flex items-center gap-1 hover:text-red-500"
+              >
+                <Ruler size={12} /> TABELA
+              </button>
             </div>
 
             {/* Grid flexível de botões de tamanho */}

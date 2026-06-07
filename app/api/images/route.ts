@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const revalidate = 86400; // Cache de 24h
+export const revalidate = 0; // Desativa o cache (0s) para mostrar imagens na hora
 
 /**
  * API Route: GET /api/images?url=<cloudinary_image_url>
@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
 
     const res = await fetch(adminUrl, {
       headers: { Authorization: `Basic ${credentials}` },
-      // Cache no servidor: revalida a cada 24h (mesma política do revalidate acima)
-      next: { revalidate: 86400 },
+      // Cache no servidor desativado para o painel atualizar em tempo real
+      cache: 'no-store',
     });
 
     if (!res.ok) {
