@@ -60,7 +60,12 @@ export function getPriceByCategory(
   const isJogador = nomeUpper.includes('JOGADOR');
   const isRetro = nomeUpper.includes('RETRO') || nomeUpper.includes('RETRÔ');
 
-  // Regra 1: Camisas temporada 26-27 (maior prioridade)
+  // Regra 1: Corinthians All Black (Edição Especial)
+  if (nomeUpper.includes('CORINTHIANS') && nomeUpper.includes('ALL BLACK')) {
+    return 209.99;
+  }
+
+  // Regra 2: Camisas temporada 26-27 (maior prioridade)
   if (nomeUpper.includes('26-27') || nomeUpper.includes('26/27')) {
     return PRECO_26_27;
   }
