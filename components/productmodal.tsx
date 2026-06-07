@@ -44,17 +44,28 @@ function isFeminina(nome: string): boolean {
   return n.includes("feminina") || n.includes("feminino");
 }
 
-/** Remove imagens duplicadas ignorando a versão do Cloudinary (ex: /v1234/) */
+/** Remove imagens duplicadas limpando variações do Cloudinary */
 function removeDuplicates(urls: (string | undefined)[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const u of urls) {
     if (!u) continue;
-    // Decodifica a URL e remove a tag de versão para a comparação
-    const norm = decodeURIComponent(u).replace(/\/v\d+\//, '/');
+    
+    // Normalização extrema para garantir que não haja duplicatas
+    // 1. Decodifica caracteres (%20)
+    // 2. Converte para minúsculo
+    // 3. Remove http:// ou https://
+    // 4. Remove a tag de versão (/v12345/)
+    // 5. Remove a extensão do arquivo (.jpg, .jpeg, .png, etc)
+    const norm = decodeURIComponent(u)
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/v\d+\//, '/')
+      .replace(/\.[a-z0-9]+$/i, '');
+      
     if (!seen.has(norm)) {
       seen.add(norm);
-      result.push(u);
+      result.push(u); // Mantém a URL original no array final
     }
   }
   return result;
@@ -74,7 +85,11 @@ function getSizeChartImage(displayCategory: string, nome: string): string {
   // Ordem de prioridade importa:
   if (nomeUpper.includes("INFANTIL")) return "/Infantil.jpeg";
   if (nomeUpper.includes("FEMININA") || nomeUpper.includes("FEMININO")) return "/Feminina.jpeg";
-  if (nomeUpper.includes("JOGADOR")) return "/Jogador.jpeg";
+  
+  // Se for versão Jogador OU Corinthians All Black
+  const isAllBlack = nomeUpper.includes("CORINTHIANS") && nomeUpper.includes("ALL BLACK");
+  if (nomeUpper.includes("JOGADOR") || isAllBlack) return "/Jogador.jpeg";
+  
   if (cat === "RETRO" || nomeUpper.includes("RETRO") || nomeUpper.includes("RETRÔ")) return "/Retro.jpeg";
   
   // Padrão (torcedor/temporada)
