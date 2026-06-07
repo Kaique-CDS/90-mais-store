@@ -177,8 +177,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const totalItens = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-  // Regra de Negócio: 5% de desconto no total da compra a partir de 2 itens
-  const desconto = totalItens >= 2 ? subtotal * 0.05 : 0;
+  // Desconto removido — sempre zero
+  const desconto = 0;
 
   const total = subtotal - desconto;
 

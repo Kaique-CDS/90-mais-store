@@ -20,13 +20,29 @@ import { getOptimizedImageUrl } from "@/lib/images";
 
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
-const SIZES = ["P", "M", "G", "GG", "G1"] as const;
-type Size = (typeof SIZES)[number];
+const SIZES_PADRAO = ["P", "M", "G", "GG", "G1"] as const;
+const SIZES_FEMININO = ["P", "M", "G"] as const;
+const SIZES_INFANTIL = ["3-4", "5-7", "8-10", "11-13"] as const;
+
+type Size = (typeof SIZES_PADRAO)[number];
 
 // Modificadores de preço fixos para tamanhos especiais (G1 cobra +R$20)
-const SIZE_MODIFIER: Record<Size, number> = {
+const SIZE_MODIFIER: Record<string, number> = {
   P: 0, M: 0, G: 0, GG: 0, G1: 20,
+  "3-4": 0, "5-7": 0, "8-10": 0, "11-13": 0,
 };
+
+/** Detecta se a camisa é infantil do Brasil */
+function isInfantilBrasil(nome: string): boolean {
+  const n = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return n.includes("infantil") && n.includes("brasil");
+}
+
+/** Detecta se a camisa é feminina */
+function isFeminina(nome: string): boolean {
+  const n = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return n.includes("feminina") || n.includes("feminino");
+}
 
 // Quantidade máxima de miniaturas visíveis na barra inferior ao mesmo tempo
 const THUMBS_VISIBLE = 5;
@@ -462,21 +478,29 @@ export default function ProductModal({
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
                 Escolha o Tamanho
               </label>
-              {/* Link que abre a tabela de medidas */}
-              <button
-                onClick={() => setShowSizeChart(true)}
-                className="text-red-600 text-[9px] font-black underline flex items-center gap-1 hover:text-red-500"
-              >
-                <Ruler size={12} /> TABELA
-              </button>
+              {/* Link que abre a tabela de medidas (apenas para camisas não-infantis) */}
+              {!isInfantilBrasil(camisa.nome) && (
+                <button
+                  onClick={() => setShowSizeChart(true)}
+                  className="text-red-600 text-[9px] font-black underline flex items-center gap-1 hover:text-red-500"
+                >
+                  <Ruler size={12} /> TABELA
+                </button>
+              )}
             </div>
 
             {/* Grid flexível de botões de tamanho */}
             <div className="flex flex-wrap gap-2">
-              {SIZES.map((s) => (
+              {(
+                isInfantilBrasil(camisa.nome)
+                  ? SIZES_INFANTIL
+                  : isFeminina(camisa.nome)
+                  ? SIZES_FEMININO
+                  : SIZES_PADRAO
+              ).map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSize(s)}
+                  onClick={() => setSize(s as Size)}
                   className={`px-4 h-11 sm:h-12 rounded-2xl font-black transition-all border-2 flex flex-col items-center justify-center ${
                     size === s
                       ? "bg-red-600 border-red-600 text-white scale-105 shadow-[0_0_20px_rgba(220,38,38,0.3)]"

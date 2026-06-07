@@ -43,10 +43,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     incrementItem,
     decrementItem,
     clearCart,
-    subtotal,
-    desconto,
     total,
-    totalItens,
   } = useCart();
 
   // Efeito para bloquear o scroll da página de fundo (body) 
@@ -87,15 +84,12 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
         `- ${i.nome} (Tam: ${i.size}) x${i.quantity} — R$ ${(i.effectivePrice * i.quantity).toFixed(2)}${formatPers(i.personalizacao)}`
       ),
       "",
-      `Subtotal: R$ ${subtotal.toFixed(2)}`,
-      // Só adiciona a linha de desconto se o cliente tiver ativado a regra (2+ itens)
-      totalItens >= 2 ? `Desconto 5%: - R$ ${desconto.toFixed(2)}` : null,
       `*Total: R$ ${total.toFixed(2)}*`,
       "Frete: Grátis",
       "",
       "Fico no aguardo da confirmação para prosseguir!",
     ]
-      .filter((l) => l !== null) // Remove linhas nulas (ex: quando não tem desconto)
+      .filter((l) => l !== null) // Remove linhas nulas
       .join("\n"); // Junta tudo com quebra de linha
 
     // Abre o link do WhatsApp usando a API (wa.me) e codifica o texto para URL (%20, etc)
@@ -125,9 +119,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           <h2 className="text-lg sm:text-xl font-black uppercase italic text-white flex items-center gap-2">
             <ShoppingBag className="text-red-600" size={20} />
             Seu Carrinho
-            {totalItens > 0 && (
+            {cart.reduce((acc, i) => acc + i.quantity, 0) > 0 && (
               <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md ml-1">
-                {totalItens}
+                {cart.reduce((acc, i) => acc + i.quantity, 0)}
               </span>
             )}
           </h2>
@@ -148,20 +142,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
         {/* Lista de itens (Scrollável) */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 py-3 sm:py-4 space-y-3">
-          {/* Banner de aviso promocional dinâmico (só aparece se o desconto for ativado) */}
-          {desconto > 0 && (
-            <div className="discount-shimmer rounded-2xl px-4 py-3 flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🎉</span>
-                <div>
-                  <p className="text-white font-black text-xs uppercase tracking-wide">Desconto Ativado!</p>
-                  <p className="text-green-100 text-[10px]">5% aplicado por comprar 2+ itens</p>
-                </div>
-              </div>
-              <span className="text-white font-black text-sm">- R$ {desconto.toFixed(2)}</span>
-            </div>
-          )}
-
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3">
               <ShoppingBag size={40} className="text-zinc-800" />
@@ -231,18 +211,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
         {/* Rodapé: Resumo Financeiro e Botão de WhatsApp */}
         {cart.length > 0 && (
           <div className="px-4 sm:px-6 pb-6 sm:pb-8 pt-4 border-t border-zinc-900 space-y-3">
-            <div className="flex justify-between text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
-              <span>Subtotal</span>
-              <span>R$ {subtotal.toFixed(2)}</span>
-            </div>
-
-            {desconto > 0 && (
-              <div className="flex justify-between text-green-400 font-black text-[10px] uppercase tracking-widest">
-                <span>Desconto 5% 🎉</span>
-                <span>- R$ {desconto.toFixed(2)}</span>
-              </div>
-            )}
-
             <div className="flex justify-between text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
               <span>Frete</span>
               <span className="text-green-500 font-black">Grátis</span>
