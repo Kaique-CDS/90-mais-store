@@ -21,6 +21,7 @@ import { getOptimizedImageUrl } from "@/lib/images";
 // ─── Constantes e Tabelas ────────────────────────────────────────────────────────
 
 const SIZES_PADRAO = ["P", "M", "G", "GG", "G1"] as const;
+const SIZES_JOGADOR = ["P", "M", "G", "GG"] as const; // Sem G1
 const SIZES_FEMININO = ["P", "M", "G"] as const;
 const SIZES_INFANTIL = ["4-5", "5-6", "6-7", "8-9", "10-11", "12-13"] as const;
 
@@ -42,6 +43,12 @@ function isInfantilBrasil(nome: string): boolean {
 function isFeminina(nome: string): boolean {
   const n = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return n.includes("feminina") || n.includes("feminino");
+}
+
+/** Detecta se a camisa é Jogador ou Corinthians All Black (que usam tamanhos/regras específicas) */
+function isJogadorOuAllBlack(nome: string): boolean {
+  const upper = nome.toUpperCase();
+  return upper.includes("JOGADOR") || (upper.includes("CORINTHIANS") && upper.includes("ALL BLACK"));
 }
 
 /** Remove imagens duplicadas limpando variações do Cloudinary */
@@ -521,6 +528,8 @@ export default function ProductModal({
                   ? SIZES_INFANTIL
                   : isFeminina(camisa.nome)
                   ? SIZES_FEMININO
+                  : isJogadorOuAllBlack(camisa.nome)
+                  ? SIZES_JOGADOR
                   : SIZES_PADRAO
               ).map((s) => (
                 <button
