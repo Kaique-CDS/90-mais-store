@@ -186,12 +186,12 @@ export default function Home() {
     return camisas.find(c => matcher(c.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")));
   };
   
-  // Camisa Brasil 2026 I (versão torcedor normal — não-feminina)
-  const b1 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bi\b/.test(n) && !/\bii\b/.test(n) && !n.includes("feminina") && !n.includes("infantil"));
+  // Camisa Brasil 2026 I (versão torcedor normal — masculina, sem feminina/infantil/jogador)
+  const b1 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bi\b/.test(n) && !/\bii\b/.test(n) && !n.includes("feminina") && !n.includes("feminino") && !n.includes("infantil") && !n.includes("jogador"));
   if (b1) maisVendidas.push(b1);
   
-  // Camisa Brasil 2026 II (versão torcedor normal — não-feminina)
-  const b2 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bii\b/.test(n) && !n.includes("feminina") && !n.includes("infantil"));
+  // Camisa Brasil 2026 II (versão torcedor normal — masculina, sem feminina/infantil/jogador)
+  const b2 = getCamisa(n => n.includes("brasil") && n.includes("2026") && /\bii\b/.test(n) && !n.includes("feminina") && !n.includes("feminino") && !n.includes("infantil") && !n.includes("jogador"));
   if (b2) maisVendidas.push(b2);
   
   const cor = getCamisa(n => n.includes("corinthians") && (n.includes("26-27") || n.includes("26/27")));
