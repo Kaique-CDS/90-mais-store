@@ -44,6 +44,22 @@ function isFeminina(nome: string): boolean {
   return n.includes("feminina") || n.includes("feminino");
 }
 
+/** Remove imagens duplicadas ignorando a versão do Cloudinary (ex: /v1234/) */
+function removeDuplicates(urls: (string | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const u of urls) {
+    if (!u) continue;
+    // Decodifica a URL e remove a tag de versão para a comparação
+    const norm = decodeURIComponent(u).replace(/\/v\d+\//, '/');
+    if (!seen.has(norm)) {
+      seen.add(norm);
+      result.push(u);
+    }
+  }
+  return result;
+}
+
 // Quantidade máxima de miniaturas visíveis na barra inferior ao mesmo tempo
 const THUMBS_VISIBLE = 5;
 
@@ -128,9 +144,7 @@ export default function ProductModal({
     setIsFullscreen(false);
     
     // Inicialmente usamos apenas a imagem principal e a galeria se disponível
-    let fotos: string[] = Array.from(
-      new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean)),
-    );
+    let fotos = removeDuplicates([camisa.imagem_url, ...(camisa.galeria ?? [])]);
     setImagens(fotos.slice(0, 10));
   }
 
@@ -143,9 +157,7 @@ export default function ProductModal({
       if (!camisa?.imagem_url) return;
 
       // Fotos já conhecidas: imagem principal + galeria do banco
-      const knownPhotos = Array.from(
-        new Set([camisa.imagem_url, ...(camisa.galeria ?? [])].filter(Boolean))
-      );
+      const knownPhotos = removeDuplicates([camisa.imagem_url, ...(camisa.galeria ?? [])]);
 
       // Chama a API Route server-side para listar as fotos reais que existem no banco
       try {
@@ -154,7 +166,7 @@ export default function ProductModal({
           const data: { urls: string[] } = await res.json();
           if (data.urls && data.urls.length > 0) {
             // Garante que a imagem principal esteja na primeira posição
-            const finalPhotos = Array.from(new Set([camisa.imagem_url, ...data.urls, ...knownPhotos])).filter(Boolean);
+            const finalPhotos = removeDuplicates([camisa.imagem_url, ...data.urls, ...knownPhotos]);
             setImagens(finalPhotos.slice(0, 15));
             return;
           }
